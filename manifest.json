@@ -1,0 +1,11 @@
+{
+  "name": "FAST TRIP",
+  "short_name": "FAST TRIP",
+  "description": "Viaja a tu manera",
+  "start_url": "/fast-trip/",
+  "scope": "/fast-trip/",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "icons": []
+}
