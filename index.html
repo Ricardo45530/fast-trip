@@ -62,6 +62,13 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_KEY
 );
 console.log("FAST TRIP conectado a Supabase");
+supabaseClient
+  .from('vehicles')
+  .select('plate,status')
+  .then(({ data, error }) => {
+    console.log("Vehículos FAST TRIP:", data);
+    console.log("Error de consulta:", error);
+  });  
 </script>
 </body>
 </html>
