@@ -94,11 +94,8 @@ botonLogin.onclick = iniciarSesion;
 document.querySelector("main").appendChild(botonLogin);  
 async function recuperarContrasena() {
   const hash = new URLSearchParams(window.location.hash.substring(1));
-  const query = new URLSearchParams(window.location.search);
-
-  if (hash.get("type") !== "recovery" &&
-      query.get("type") !== "recovery") return;
-
+const query =new URLSearchParams(window.location.search);
+if (hash.get("type") !== "recovery" && query.get("type") !== "recovery") return;    
   const nueva = prompt("Escribe tu nueva contraseña (mínimo 8 caracteres):");
   if (!nueva) return;
 
