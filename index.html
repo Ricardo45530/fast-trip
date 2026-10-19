@@ -69,6 +69,29 @@ supabaseClient
     console.log("Vehículos FAST TRIP:", data);
     console.log("Error de consulta:", error);
   });  
+async function iniciarSesion() {
+  const email = prompt("Correo electrónico:");
+  if (!email) return;
+
+  const password = prompt("Contraseña:");
+  if (!password) return;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("No se pudo iniciar sesión. Revisa tus datos.");
+    return;
+  }
+
+  alert("Bienvenido a FAST TRIP");
+}
+const botonLogin = document.createElement("button");
+botonLogin.textContent = "Iniciar sesión";
+botonLogin.onclick = iniciarSesion;
+document.querySelector("main").appendChild(botonLogin);  
 </script>
 </body>
 </html>
