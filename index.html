@@ -1,121 +1,139 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel ="manifest" href="/fast-trip/manifest.json">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAST TRIP | Viaja a tu manera</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}
-header{padding:35px 15px 20px;border-bottom:1px solid #b99746}
-.logo{font-size:38px;font-weight:bold;letter-spacing:5px;color:#d7b45a}
-.slogan{color:#ddd;letter-spacing:2px;margin-top:10px}
-main{max-width:700px;margin:auto;padding:30px 20px}
-h1{font-size:29px;color:#d7b45a}
-.intro{font-size:17px;line-height:1.7;color:#eee}
-.line{width:80px;border:1px solid #d7b45a;margin:25px auto}
-h2{color:#d7b45a;font-size:23px}
-.services{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}
-.service{border:1px solid #9d803e;border-radius:10px;padding:20px 10px;background:#111}
-.emoji{font-size:28px}
-.service h3{font-size:16px;color:#e0bd62}
-.service p{font-size:14px;color:#ddd;line-height:1.5}
-.note{background:#17140d;border-radius:10px;padding:18px;line-height:1.7;color:#eee}
-.button{display:inline-block;margin:22px 0;background:#d7b45a;color:#111;text-decoration:none;padding:15px 25px;border-radius:7px;font-weight:bold}
-footer{padding:22px;color:#aaa;border-top:1px solid #594821;font-size:13px}
-@media(max-width:420px){.services{grid-template-columns:1fr}.logo{font-size:32px}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080808">
+  <link rel="manifest" href="/fast-trip/manifest.json">
+  <title>FAST TRIP | Viaja a tu manera</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}
+    header{padding:35px 15px 20px;border-bottom:1px solid #b99746}.logo{font-size:38px;font-weight:bold;letter-spacing:5px;color:#d7b45a}.slogan{color:#ddd;letter-spacing:2px;margin-top:10px}
+    main{max-width:700px;margin:auto;padding:30px 20px}h1{font-size:29px;color:#d7b45a}.intro{font-size:17px;line-height:1.7;color:#eee}.line{width:80px;border:1px solid #d7b45a;margin:25px auto}h2{color:#d7b45a;font-size:23px}
+    .services{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}.service{border:1px solid #9d803e;border-radius:10px;padding:20px 10px;background:#111}.emoji{font-size:28px}.service h3{font-size:16px;color:#e0bd62}.service p{font-size:14px;color:#ddd;line-height:1.5}
+    .note{background:#17140d;border-radius:10px;padding:18px;line-height:1.7;color:#eee}.button,button{display:inline-block;margin:12px 5px;background:#d7b45a;color:#111;text-decoration:none;padding:14px 22px;border:0;border-radius:7px;font-weight:bold;font-size:15px;cursor:pointer}.secondary{background:transparent;color:#d7b45a;border:1px solid #d7b45a}
+    .panel{margin:24px auto;padding:22px;max-width:480px;background:#151515;border:1px solid #9d803e;border-radius:12px}.panel label{display:block;text-align:left;margin:12px 0 6px}.panel input{width:100%;padding:13px;border-radius:6px;border:1px solid #b99746;background:#242424;color:white;font-size:16px}.hidden{display:none}.message{line-height:1.5;min-height:20px}footer{padding:22px;color:#aaa;border-top:1px solid #594821;font-size:13px}
+    @media(max-width:420px){.services{grid-template-columns:1fr}.logo{font-size:32px}}
+  </style>
 </head>
 <body>
-<header>
-<div class="logo">FAST TRIP</div>
-<div class="slogan">Viaja a tu manera</div>
-</header>
+<header><div class="logo">FAST TRIP</div><div class="slogan">Viaja a tu manera</div></header>
 <main>
-<h1>Tu viaje, a tu manera</h1>
-<p class="intro">Transporte ejecutivo con atención personalizada, comodidad y confianza en Guayaquil y sus alrededores.</p>
-<div class="line"></div>
-<h2>Nuestros servicios</h2>
-<div class="services">
-<div class="service"><div class="emoji">🚘</div><h3>Transporte ejecutivo</h3><p>Traslados cómodos y personalizados.</p></div>
-<div class="service"><div class="emoji">✈️</div><h3>Traslados al aeropuerto</h3><p>Coordina tu traslado con anticipación.</p></div>
-<div class="service"><div class="emoji">🧳</div><h3>Viajes privados y turismo</h3><p>Viajes planificados según tu necesidad.</p></div>
-<div class="service"><div class="emoji">📦</div><h3>Encomiendas</h3><p>Entrega y transporte de paquetes.</p></div>
-</div>
-<div class="note">
-<strong style="color:#d7b45a">Reserva con anticipación</strong><br>
-Las reservas se realizan con al menos un día de anticipación y están sujetas a confirmación de disponibilidad.<br><br>
-Aceptamos tarjetas de crédito, sujeto a confirmación al reservar.
-</div>
-<p class="intro">¿Deseas viajar con FAST TRIP?</p>
-<a class="button" href="mailto:fasttrip2027@gmail.com">Consultar una reserva</a>
+  <h1>Tu viaje, a tu manera</h1>
+  <p class="intro">Transporte ejecutivo con atención personalizada, comodidad y confianza en Guayaquil y sus alrededores.</p>
+  <div class="line"></div><h2>Nuestros servicios</h2>
+  <div class="services">
+    <div class="service"><div class="emoji">🚘</div><h3>Transporte ejecutivo</h3><p>Traslados cómodos y personalizados.</p></div>
+    <div class="service"><div class="emoji">✈️</div><h3>Traslados al aeropuerto</h3><p>Coordina tu traslado con anticipación.</p></div>
+    <div class="service"><div class="emoji">🧳</div><h3>Viajes privados y turismo</h3><p>Viajes planificados según tu necesidad.</p></div>
+    <div class="service"><div class="emoji">📦</div><h3>Encomiendas</h3><p>Entrega y transporte de paquetes.</p></div>
+  </div>
+  <div class="note"><strong style="color:#d7b45a">Reserva con anticipación</strong><br>Las reservas se realizan con al menos un día de anticipación y están sujetas a confirmación de disponibilidad.<br><br>Aceptamos tarjetas de crédito, sujeto a confirmación al reservar.</div>
+  <p class="intro">¿Deseas viajar con FAST TRIP?</p>
+  <a class="button" href="mailto:fasttrip2027@gmail.com">Consultar una reserva</a>
+  <section id="authPanel" class="panel">
+    <h2>Acceso a FAST TRIP</h2>
+    <form id="loginForm">
+      <label for="loginEmail">Correo electrónico</label><input id="loginEmail" type="email" autocomplete="email" required>
+      <label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required>
+      <button type="submit">Iniciar sesión</button>
+    </form>
+    <button type="button" id="forgotButton" class="secondary">Olvidé mi contraseña</button>
+    <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
+  </section>
+  <section id="recoveryPanel" class="panel hidden" aria-labelledby="recoveryTitle">
+    <h2 id="recoveryTitle">Crear nueva contraseña</h2>
+    <form id="recoveryForm">
+      <label for="newPassword">Nueva contraseña (mínimo 8 caracteres)</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required>
+      <label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required>
+      <button type="submit">Guardar nueva contraseña</button>
+    </form>
+    <p id="recoveryMessage" class="message" role="status" aria-live="polite"></p>
+  </section>
 </main>
 <footer>FAST TRIP · Guayaquil, Ecuador<br>Viaja a tu manera</footer>
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = "https://ftiuzwwshcocvkvtdngm.supabase.co";
-const SUPABASE_KEY ="sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE";
-
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-console.log("FAST TRIP conectado a Supabase");
-supabaseClient
-  .from('vehicles')
-  .select('plate,status')
-  .then(({ data, error }) => {
-    console.log("Vehículos FAST TRIP:", data);
-    console.log("Error de consulta:", error);
-  });  
-async function iniciarSesion() {
-  const email = prompt("Correo electrónico:");
-  if (!email) return;
-
-  const password = prompt("Contraseña:");
-  if (!password) return;
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    alert("No se pudo iniciar sesión. Revisa tus datos.");
-    return;
-  }
-
-  alert("Bienvenido a FAST TRIP");
+const SUPABASE_URL = 'https://ftiuzwwshcocvkvtdngm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
+const SITE_URL = 'https://ricardo45530.github.io/fast-trip/';
+const loginMessage = document.getElementById('loginMessage');
+const recoveryMessage = document.getElementById('recoveryMessage');
+const recoveryPanel = document.getElementById('recoveryPanel');
+const authPanel = document.getElementById('authPanel');
+let client;
+let recoveryMode = false;
+function message(element, value){element.textContent = value;}
+function showRecovery(){
+  recoveryMode = true;
+  recoveryPanel.classList.remove('hidden');
+  authPanel.classList.add('hidden');
+  recoveryPanel.scrollIntoView({behavior:'smooth',block:'start'});
 }
-const botonLogin = document.createElement("button");
-botonLogin.textContent = "Iniciar sesión";
-botonLogin.onclick = iniciarSesion;
-document.querySelector("main").appendChild(botonLogin);  
-async function recuperarContrasena() {
-  const hash = new URLSearchParams(window.location.hash.substring(1));
-const query =new URLSearchParams(window.location.search);
-if (hash.get("type") !== "recovery" && query.get("type") !== "recovery") return;    
-  const nueva = prompt("Escribe tu nueva contraseña (mínimo 8 caracteres):");
-  if (!nueva) return;
-
-  const { error } = await supabaseClient.auth.updateUser({
-    password: nueva
+function cleanRecoveryUrl(){
+  window.history.replaceState({}, '', window.location.pathname);
+}
+async function initialize(){
+  if (!window.supabase){message(loginMessage,'No se pudo cargar la conexión. Comprueba tu internet y actualiza la página.');return;}
+  client = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+    auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}
   });
-
-  if (error) {
-    alert("No se pudo cambiar la contraseña: " + error.message);
-  } else {
-    alert("Contraseña actualizada correctamente");
-    window.history.replaceState({}, "", window.location.pathname);
+  // Supabase emits PASSWORD_RECOVERY after validating the recovery link.
+  client.auth.onAuthStateChange((event) => {
+    if(event === 'PASSWORD_RECOVERY') showRecovery();
+  });
+  const params = new URLSearchParams(window.location.search);
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+  const isRecoveryLink = params.get('type') === 'recovery' || fragment.get('type') === 'recovery';
+  if (isRecoveryLink){
+    message(loginMessage,'Validando enlace de recuperación...');
+  }
+  // Supabase may exchange a ?code=... for a session asynchronously.
+  const {data,error} = await client.auth.getSession();
+  if (error && isRecoveryLink) message(loginMessage,'No se pudo validar el enlace. Solicita uno nuevo.');
+  // A recovery link can carry a PKCE code rather than type=recovery.
+  // Only the PASSWORD_RECOVERY event authorizes the password form.
+  if(data.session && !recoveryMode && !isRecoveryLink && !params.has('code')){
+    message(loginMessage,'Sesión iniciada.');
   }
 }
-
-supabaseClient.auth.onAuthStateChange((event) => {
-  if (event === "PASSWORD_RECOVERY") {
-    setTimeout(recuperarContrasena, 0);
-  }
+document.getElementById('loginForm').addEventListener('submit',async (event)=>{
+  event.preventDefault();
+  if(!client)return;
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  message(loginMessage,'Comprobando acceso...');
+  const {error}=await client.auth.signInWithPassword({email,password});
+  message(loginMessage,error?'No se pudo iniciar sesión. Revisa tus datos.':'Bienvenido a FAST TRIP.');
 });
+document.getElementById('forgotButton').addEventListener('click',async ()=>{
+  if(!client)return;
+  let email=document.getElementById('loginEmail').value.trim();
+  if(!email){message(loginMessage,'Primero escribe tu correo electrónico.');return;}
+  message(loginMessage,'Enviando correo de recuperación...');
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL});
+  message(loginMessage,error?'No se pudo enviar el correo: '+error.message:'Si el correo está registrado, recibirás un enlace para crear una nueva contraseña. Revisa también spam.');
+});
+document.getElementById('recoveryForm').addEventListener('submit',async (event)=>{
+  event.preventDefault();
+  if(!client || !recoveryMode)return;
+  const password=document.getElementById('newPassword').value;
+  const confirmation=document.getElementById('confirmPassword').value;
+  if(password.length<8){message(recoveryMessage,'La contraseña debe tener al menos 8 caracteres.');return;}
+  if(password!==confirmation){message(recoveryMessage,'Las contraseñas no coinciden.');return;}
+  message(recoveryMessage,'Guardando contraseña...');
+  const {error}=await client.auth.updateUser({password});
+  if(error){message(recoveryMessage,'No se pudo cambiar la contraseña: '+error.message);return;}
+  document.getElementById('recoveryForm').reset();
+  message(recoveryMessage,'Contraseña actualizada correctamente. Ya puedes iniciar sesión.');
+  cleanRecoveryUrl();
+  await client.auth.signOut();
+  recoveryMode=false;
+  recoveryPanel.classList.add('hidden');
+  authPanel.classList.remove('hidden');
+  message(loginMessage,'Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+});
+initialize();
 </script>
 </body>
 </html>
