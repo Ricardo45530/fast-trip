@@ -92,6 +92,33 @@ const botonLogin = document.createElement("button");
 botonLogin.textContent = "Iniciar sesión";
 botonLogin.onclick = iniciarSesion;
 document.querySelector("main").appendChild(botonLogin);  
+async function recuperarContrasena() {
+  const hash = new URLSearchParams(window.location.hash.substring(1));
+  const query = new URLSearchParams(window.location.search);
+
+  if (hash.get("type") !== "recovery" &&
+      query.get("type") !== "recovery") return;
+
+  const nueva = prompt("Escribe tu nueva contraseña (mínimo 8 caracteres):");
+  if (!nueva) return;
+
+  const { error } = await supabaseClient.auth.updateUser({
+    password: nueva
+  });
+
+  if (error) {
+    alert("No se pudo cambiar la contraseña: " + error.message);
+  } else {
+    alert("Contraseña actualizada correctamente");
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+}
+
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === "PASSWORD_RECOVERY") {
+    setTimeout(recuperarContrasena, 0);
+  }
+});
 </script>
 </body>
 </html>
