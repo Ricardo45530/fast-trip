@@ -146,8 +146,8 @@ async function verificarAdministrador() {
 
   if (error) return false;
 
-  return data?.role === "Admin" &&
-         data?.status === "Approved";
+  return data?.role === "admin" &&
+         data?.status === "approved";
 }  
 </script>
 </body>
