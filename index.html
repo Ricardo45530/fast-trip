@@ -113,6 +113,7 @@ document.getElementById('loginForm').addEventListener('submit',async (event)=>{
 if (!error) {
   const esAdmin = await verificarAdministrador();
   console.log("Administrador autorizado:", esAdmin);
+document.getElementById('adminPanel').classList.toggle('hidden', !esAdmin);  
 }  
 });
 document.getElementById('forgotButton').addEventListener('click',async ()=>{
