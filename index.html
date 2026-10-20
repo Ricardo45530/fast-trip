@@ -105,6 +105,10 @@ document.getElementById('loginForm').addEventListener('submit',async (event)=>{
   message(loginMessage,'Comprobando acceso...');
   const {error}=await client.auth.signInWithPassword({email,password});
   message(loginMessage,error?'No se pudo iniciar sesión. Revisa tus datos.':'Bienvenido a FAST TRIP.');
+if (!error) {
+  const esAdmin = await verificarAdministrador();
+  console.log("Administrador autorizado:", esAdmin);
+}  
 });
 document.getElementById('forgotButton').addEventListener('click',async ()=>{
   if(!client)return;
