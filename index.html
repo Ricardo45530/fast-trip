@@ -55,10 +55,11 @@
   <p>Bienvenido, administrador.</p>
   <p>Desde aquí gestionaremos pasajeros, conductores, vehículos y reservas.</p>
 <h3>Gestión de FAST TRIP</h3>
-<button type="button">Pasajeros</button>
+<button type="button" id="btnPasajeros">Pasajeros</button>
 <button type="button">Conductores</button>
 <button type="button">Vehículos</button>
-<button type="button">Reservas</button>  
+<button type="button">Reservas</button> 
+<div id="listaPasajeros"></div>  
 </section>  
 </main>
 <footer>FAST TRIP · Guayaquil, Ecuador<br>Viaja a tu manera</footer>
@@ -163,7 +164,11 @@ async function verificarAdministrador() {
 
   return data?.role === "admin" &&
          data?.status === "approved";
-}  
+} 
+document.getElementById('btnPasajeros').addEventListener('click', () => {
+  document.getElementById('listaPasajeros').textContent =
+    'Preparando consulta de pasajeros...';
+});  
 </script>
 </body>
 </html>
