@@ -56,7 +56,8 @@
   <p>Desde aquí gestionaremos pasajeros, conductores, vehículos y reservas.</p>
 <h3>Gestión de FAST TRIP</h3>
 <button type="button" id="btnPasajeros">Pasajeros</button>
-<button type="button">Conductores</button>
+<button type="button" id="btnConductores">Conductores</button>
+<div id="listaConductores"></div>  
 <button type="button">Vehículos</button>
 <button type="button">Reservas</button> 
 <div id="listaPasajeros"></div>  
@@ -183,6 +184,25 @@ if (error) {
 [p.full_name || 'Sin nombre', p.phone || 'Sin teléfono', p.status].join(' - ')    
   ).join('\n');
 }
+});
+document.getElementById('btnConductores').addEventListener('click', async () => {
+  const lista = document.getElementById('listaConductores');
+  lista.textContent = 'Consultando conductores...';
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('full_name, phone, status')
+    .eq('role', 'driver');
+
+  if (error) {
+    lista.textContent = 'Error: ' + error.message;
+  } else if (!data || data.length === 0) {
+    lista.textContent = 'No hay conductores registrados.';
+  } else {
+    lista.textContent = data.map(c =>
+      [c.full_name || 'Sin nombre', c.phone || 'Sin teléfono', c.status].join(' - ')
+    ).join('\n');
+  }
 });  
 </script>
 </body>
