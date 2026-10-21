@@ -455,8 +455,88 @@ if (v.status === 'enabled') {
     ].join('\n');
 
     lista.appendChild(elemento);
+if (!viaje.driver_id && !viaje.vehicle_id) {
+  const botonAsignar = document.createElement('button');
+  botonAsignar.type = 'button';
+  botonAsignar.textContent = 'Asignar conductor';
+  botonAsignar.addEventListener('click', () => {
+    asignarReserva(viaje.id);
   });
-});
+  lista.appendChild(botonAsignar);
+}    
+  });
+});async function asignarReserva(viajeId) {
+  if (!client || !(await verificarAdministrador())) {
+    alert('Acceso no autorizado.');
+    return;
+  }
+
+  const { data: conductores, error: errorConductores } = await client
+    .from('profiles')
+    .select('id, full_name')
+    .eq('role', 'driver')
+    .eq('status', 'approved');
+
+  const { data: vehiculos, error: errorVehiculos } = await client
+    .from('vehicles')
+    .select('id, driver_id, plate, unit_number')
+    .eq('status', 'enabled')
+    .not('unit_number', 'is', null);
+
+  if (errorConductores || errorVehiculos) {
+    alert('Error al consultar conductores o vehículos.');
+    return;
+  }
+
+  const opciones = (conductores || []).flatMap(c =>
+    (vehiculos || [])
+      .filter(v => v.driver_id === c.id)
+      .map(v => ({
+        conductor: c,
+        vehiculo: v
+      }))
+  );
+
+  if (!opciones.length) {
+    alert('No hay conductores con vehículos habilitados.');
+    return;
+  }
+
+  const mensaje = opciones.map((o, i) =>
+    ${i + 1}. ${o.conductor.full_name || 'Conductor'} - ${o.vehiculo.unit_number} - ${o.vehiculo.plate}
+  ).join('\n');
+
+  const seleccion = prompt(
+    'Selecciona el número del conductor y vehículo:\n' + mensaje
+  );
+
+  if (seleccion === null) return;
+
+  const numero = Number(seleccion);
+
+  if (!Number.isInteger(numero) || numero < 1 || numero > opciones.length) {
+    alert('Selección inválida.');
+    return;
+  }
+
+  const elegido = opciones[numero - 1];
+
+  if (!confirm('¿Confirmar asignación de este viaje?')) return;
+
+  const { error } = await client.rpc('assign_fast_trip', {
+    p_trip_id: viajeId,
+    p_driver_id: elegido.conductor.id,
+    p_vehicle_id: elegido.vehiculo.id
+  });
+
+  if (error) {
+    alert('No se pudo asignar: ' + error.message);
+    return;
+  }
+
+  alert('Viaje asignado correctamente.');
+  document.getElementById('btnReservas').click();
+}
 </script>
 </body>
 </html>
