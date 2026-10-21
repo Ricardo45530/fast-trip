@@ -81,7 +81,8 @@
 <div id="listaConductores"></div>  
 <button type="button" id="btnVehiculos">Vehículos</button>
 <div id="listaVehiculos"></div>
-<button type="button">Reservas</button> 
+<button type="button" id="btnReservas">Reservas</button>
+<div id="listaReservas"></div> 
 <div id="listaPasajeros"></div>  
 </section>  
 </main>
@@ -409,6 +410,53 @@ if (v.status === 'enabled') {
 }      
     });
   }
-});</script>
+});document.getElementById('btnReservas').addEventListener('click', async () => {
+  const lista = document.getElementById('listaReservas');
+  lista.textContent = 'Consultando reservas...';
+
+  if (!client || !(await verificarAdministrador())) {
+    lista.textContent = 'Acceso no autorizado.';
+    return;
+  }
+
+  const { data, error } = await client
+    .from('trips')
+    .select('id, service_type, origin_text, destination_text, scheduled_at, status, driver_id, vehicle_id, total_amount')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    lista.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    lista.textContent = 'No hay reservas registradas.';
+    return;
+  }
+
+  lista.replaceChildren();
+
+  data.forEach(viaje => {
+    const elemento = document.createElement('p');
+    elemento.style.whiteSpace = 'pre-line';
+
+    elemento.textContent = [
+      'Servicio: ' + (viaje.service_type || 'Sin especificar'),
+      'Origen: ' + (viaje.origin_text || 'Sin especificar'),
+      'Destino: ' + (viaje.destination_text || 'Sin especificar'),
+      'Fecha: ' + (viaje.scheduled_at || 'Por coordinar'),
+      'Estado: ' + (viaje.status || 'Sin estado'),
+      'Tarifa: ' + (
+        viaje.total_amount == null
+          ? 'Pendiente de cálculo'
+          : '$' + Number(viaje.total_amount).toFixed(2)
+      )
+    ].join('\n');
+
+    lista.appendChild(elemento);
+  });
+});
+</script>
 </body>
 </html>
