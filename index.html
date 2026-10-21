@@ -502,9 +502,9 @@ if (!viaje.driver_id && !viaje.vehicle_id) {
     return;
   }
 
-  const mensaje = opciones.map((o, i) =>
-    ${i + 1}. ${o.conductor.full_name || 'Conductor'} - ${o.vehiculo.unit_number} - ${o.vehiculo.plate}
-  ).join('\n');
+const mensaje = opciones.map((o, i) =>
+  (i + 1) + '. ' + (o.conductor.full_name || 'Conductor') + ' - ' + o.vehiculo.unit_number + ' - ' + o.vehiculo.plate
+).join('\n');
 
   const seleccion = prompt(
     'Selecciona el número del conductor y vehículo:\n' + mensaje
