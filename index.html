@@ -76,7 +76,8 @@
 <button type="button" id="btnPasajeros">Pasajeros</button>
 <button type="button" id="btnConductores">Conductores</button>
 <div id="listaConductores"></div>  
-<button type="button">Vehículos</button>
+<button type="button" id="btnVehiculos">Vehículos</button>
+<div id="listaVehiculos"></div>
 <button type="button">Reservas</button> 
 <div id="listaPasajeros"></div>  
 </section>  
@@ -318,6 +319,36 @@ rechazar.addEventListener('click', async () => {
 });
 }  
 });  
-</script>
+document.getElementById('btnVehiculos').addEventListener('click', async () => {
+  const lista = document.getElementById('listaVehiculos');
+  lista.textContent = 'Consultando vehículos...';
+
+  if (!client || !(await verificarAdministrador())) {
+    lista.textContent = 'Acceso no autorizado.';
+    return;
+  }
+
+  const { data, error } = await client
+    .from('vehicles')
+    .select('*')
+    .limit(100);
+
+  if (error) {
+    lista.textContent = 'Error al consultar vehículos: ' + error.message;
+  } else if (!data || data.length === 0) {
+    lista.textContent = 'No hay vehículos registrados.';
+  } else {
+    lista.replaceChildren();
+
+    data.forEach(v => {
+      const elemento = document.createElement('p');
+      elemento.textContent = [
+        v.plate || 'Sin placa',
+        v.status || 'Sin estado'
+      ].join(' - ');
+      lista.appendChild(elemento);
+    });
+  }
+});</script>
 </body>
 </html>
