@@ -33,6 +33,14 @@
   <a class="button" href="mailto:fasttrip2027@gmail.com">Consultar una reserva</a>
   <section id="authPanel" class="panel">
     <h2>Acceso a FAST TRIP</h2>
+  <p>
+  <a href="https://wa.me/593982831006?text=Hola%2C%20deseo%20registrarme%20como%20conductor%20de%20FAST%20TRIP."
+     target="_blank"
+     rel="noopener noreferrer"
+     style="display:inline-block;background:#d7b45a;color:#080808;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:bold;">
+    Registrarme como conductor
+  </a>
+</p>  
     <form id="loginForm">
       <label for="loginEmail">Correo electrónico</label><input id="loginEmail" type="email" autocomplete="email" required>
       <label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required>
@@ -191,7 +199,7 @@ document.getElementById('btnConductores').addEventListener('click', async () => 
 
   const { data, error } = await client
     .from('profiles')
-    .select('full_name, phone, status')
+.select('id, full_name, phone, status')    
     .eq('role', 'driver');
 
   if (error) {
@@ -199,10 +207,66 @@ document.getElementById('btnConductores').addEventListener('click', async () => 
   } else if (!data || data.length === 0) {
     lista.textContent = 'No hay conductores registrados.';
   } else {
-    lista.textContent = data.map(c =>
-      [c.full_name || 'Sin nombre', c.phone || 'Sin teléfono', c.status].join(' - ')
-    ).join('\n');
+lista.replaceChildren();
+data.forEach(c => {    
+const datos = document.createElement('p');
+datos.textContent = [
+  c.full_name || 'Sin nombre',
+  c.phone || 'Sin teléfono',
+  c.status
+].join(' - ');
+lista.appendChild(datos);      
+if (c.status === 'pending') {
+  const aprobar = document.createElement('button');
+  aprobar.type = 'button';
+  aprobar.textContent = 'Aprobar';
+  lista.appendChild(aprobar);aprobar.addEventListener('click', async () => {
+  if (!confirm('¿Aprobar este conductor?')) return;
+
+  const { data: actualizado, error } = await client
+    .from('profiles')
+    .update({ status: 'approved' })
+    .eq('id', c.id)
+    .eq('role', 'driver')
+    .eq('status', 'pending')
+    .select('id');
+
+  if (error) {
+    alert('Error al aprobar: ' + error.message);
+  } else if (!actualizado || actualizado.length === 0) {
+    alert('No se pudo aprobar. Verifica los permisos.');
+  } else {
+    alert('Conductor aprobado correctamente.');
+    document.getElementById('btnConductores').click();
   }
+});
+const rechazar = document.createElement('button');
+rechazar.type = 'button';
+rechazar.textContent = 'Rechazar';
+lista.appendChild(rechazar);
+rechazar.addEventListener('click', async () => {
+  if (!confirm('¿Rechazar este conductor?')) return;
+
+  const { data: actualizado, error } = await client
+    .from('profiles')
+    .update({ status: 'rejected' })
+    .eq('id', c.id)
+    .eq('role', 'driver')
+    .eq('status', 'pending')
+    .select('id');
+
+  if (error) {
+    alert('Error al rechazar: ' + error.message);
+  } else if (!actualizado || actualizado.length === 0) {
+    alert('No se pudo rechazar. Verifica los permisos.');
+  } else {
+    alert('Conductor rechazado correctamente.');
+    document.getElementById('btnConductores').click();
+  }
+});  
+}  
+});
+}  
 });  
 </script>
 </body>
