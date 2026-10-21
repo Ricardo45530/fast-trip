@@ -197,12 +197,52 @@ if (error) {
   lista.textContent = 'Error al consultar pasajeros: ' + error.message;
 } else if (!data || data.length === 0) {
   lista.textContent = 'No hay pasajeros registrados.';
-} else {
-  lista.textContent = data.map(p =>
-[p.full_name || 'Sin nombre', p.phone || 'Sin teléfono', p.status].join(' - ')    
-  ).join('\n');
+} else {  
+lista.replaceChildren();
+
+  data.forEach(p => {
+    const datos = document.createElement('p');
+    datos.textContent = [
+      p.full_name || 'Sin nombre',
+      p.phone || 'Sin teléfono',
+      p.status
+    ].join(' - ');
+    lista.appendChild(datos);
+
+    if (p.status === 'pending') {
+      ['approved', 'rejected'].forEach(estado => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.textContent =
+          estado === 'approved' ? 'Aprobar' : 'Rechazar';
+
+        boton.addEventListener('click', async () => {
+          if (!confirm('¿Confirmar esta decisión?')) return;
+
+          const { data: actualizado, error } = await client
+            .from('profiles')
+            .update({ status: estado })
+            .eq('id', p.id)
+            .eq('role', 'passenger')
+            .eq('status', 'pending')
+            .select('id');
+
+          if (error) {
+            alert('Error: ' + error.message);
+          } else if (!actualizado?.length) {
+            alert('No se pudo actualizar. Revisa los permisos.');
+          } else {
+            alert('Pasajero actualizado correctamente.');
+            document.getElementById('btnPasajeros').click();
+          }
+        });
+
+        lista.appendChild(boton);
+      });
+    }
+  });
 }
-});
+});  
 document.getElementById('btnConductores').addEventListener('click', async () => {
   const lista = document.getElementById('listaConductores');
   lista.textContent = 'Consultando conductores...';
