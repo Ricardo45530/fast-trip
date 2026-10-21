@@ -347,6 +347,63 @@ document.getElementById('btnVehiculos').addEventListener('click', async () => {
         v.status || 'Sin estado'
       ].join(' - ');
       lista.appendChild(elemento);
+if (v.status === 'pending' || v.status === 'disabled') {
+  const habilitar = document.createElement('button');
+  habilitar.type = 'button';
+  habilitar.textContent = 'Habilitar';
+
+  habilitar.addEventListener('click', async () => {
+    if (!confirm('¿Habilitar este vehículo?')) return;
+    if (!(await verificarAdministrador())) return;
+
+    const { data, error } = await client
+      .from('vehicles')
+      .update({ status: 'enabled' })
+      .eq('id', v.id)
+      .in('status', ['pending', 'disabled'])
+      .select('id');
+
+    if (error) {
+      alert('Error: ' + error.message);
+    } else if (!data?.length) {
+      alert('No se pudo habilitar. Revisa los permisos.');
+    } else {
+      alert('Vehículo habilitado.');
+      document.getElementById('btnVehiculos').click();
+    }
+  });
+
+  lista.appendChild(habilitar);
+}
+
+if (v.status === 'enabled') {
+  const bloquear = document.createElement('button');
+  bloquear.type = 'button';
+  bloquear.textContent = 'Bloquear';
+
+  bloquear.addEventListener('click', async () => {
+    if (!confirm('¿Bloquear este vehículo?')) return;
+    if (!(await verificarAdministrador())) return;
+
+    const { data, error } = await client
+      .from('vehicles')
+      .update({ status: 'disabled' })
+      .eq('id', v.id)
+      .eq('status', 'enabled')
+      .select('id');
+
+    if (error) {
+      alert('Error: ' + error.message);
+    } else if (!data?.length) {
+      alert('No se pudo bloquear. Revisa los permisos.');
+    } else {
+      alert('Vehículo bloqueado.');
+      document.getElementById('btnVehiculos').click();
+    }
+  });
+
+  lista.appendChild(bloquear);
+}      
     });
   }
 });</script>
