@@ -7,5 +7,13 @@
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "lang": "es-EC"
+"lang": "es-EC",
+"icons": [
+  {
+    "src": "./logo%20fast%20trip%20app.jpeg",
+    "sizes": "any",
+    "type": "image/jpeg",
+    "purpose": "any"
+  }
+]  
 }
