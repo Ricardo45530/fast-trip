@@ -1,4 +1,15 @@
-<!DOCTYPE html>
+[9:14, 22/10/2026] Just enjoy the ride 🚘🐎: <!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="/fast-trip/manifest.json">
+<title>FAST TRIP | Viaja a tu manera</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}main{max-width:700px;margin:auto;padding:30px 20px}.logo{font-family:'Great Vibes',cursive;font-size:72px;font-weight:normal;color:#d7b45a;letter-spacing:2px;line-height:1.3}.intro{font-size:17px;line-height:1.7;color:#eee}.line{width:80px;border:1px solid #d7b45a;margin:25…
+[9:20, 22/10/2026] Just enjoy the ride 🚘🐎: <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -9,24 +20,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}main{max-width:700px;margin:auto;padding:30px 20px}.logo{font-family:'Great Vibes',cursive;font-size:72px;font-weight:normal;color:#d7b45a;letter-spacing:2px;line-height:1.3}.intro{font-size:17px;line-height:1.7;color:#eee}.line{width:80px;border:1px solid #d7b45a;margin:25px auto}h2{color:#d7b45a;font-size:23px}.services{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}.service{border:1px solid #9d803e;border-radius:10px;padding:20px 10px;background:#111}.service h3{font-size:16px;color:#e0bd62}.service p{font-size:14px;color:#ddd;line-height:1.5}.button,button{display:inline-block;margin:12px 5px;background:#d7b45a;color:#111;text-decoration:none;padding:14px 22px;border:0;border-radius:7px;font-weight:bold;font-size:15px;cursor:pointer}.secondary{background:transparent;color:#d7b45a;border:1px solid #d7b45a}.panel{margin:24px auto;padding:22px;max-width:540px;background:#151515;border:1px solid #9d803e;border-radius:12px}.panel label{display:block;text-align:left;margin:12px 0 6px}.panel input{width:100%;padding:13px;border-radius:6px;border:1px solid #b99746;background:#242424;color:white;font-size:16px}.hidden{display:none!important}.message{line-height:1.5;min-height:20px;overflow-wrap:anywhere}.entry{border-top:1px solid #594821;padding:12px 0;text-align:left;white-space:pre-line;overflow-wrap:anywhere}.entry button{padding:9px 12px;margin:7px 4px 4px 0}footer{padding:22px;color:#aaa;border-top:1px solid #594821;font-size:13px}@media(max-width:420px){.services{grid-template-columns:1fr}.logo{font-size:32px}}
-button, .button {
-  background: linear-gradient(155deg, #fff0b7 0%, #f2d077 18%, #d6a335 52%, #966615 86%, #64430d 100%);
-  color: #261901;
-  border: 1px solid #ffe5a1;
-  border-radius: 13px;
-  box-shadow: inset 0 2px 2px rgba(255,255,255,.75),
-              inset 0 -3px 4px rgba(67,39,0,.48),
-              0 5px 0 #65450f,
-              0 9px 16px rgba(0,0,0,.55);
-  text-shadow: 0 1px 0 rgba(255,255,255,.28);
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-
-button:active, .button:active {
-  transform: translateY(4px);
-  box-shadow: inset 0 2px 5px rgba(65,37,0,.38),
-              0 1px 0 #65450f;
-}
+button, .button {background: linear-gradient(155deg, #fff0b7 0%, #f2d077 18%, #d6a335 52%, #966615 86%, #64430d 100%);color: #261901;border: 1px solid #ffe5a1;border-radius: 13px;box-shadow: inset 0 2px 2px rgba(255,255,255,.75),inset 0 -3px 4px rgba(67,39,0,.48),0 5px 0 #65450f,0 9px 16px rgba(0,0,0,.55);text-shadow: 0 1px 0 rgba(255,255,255,.28);transition: transform .12s ease, box-shadow .12s ease;}
+button:active, .button:active {transform: translateY(4px);box-shadow: inset 0 2px 5px rgba(65,37,0,.38),0 1px 0 #65450f;}
+button:disabled {opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -48,6 +44,7 @@ button:active, .button:active {
 <button type="button" id="forgotButton" class="secondary">Olvidé mi contraseña</button><p id="loginMessage" class="message" role="status" aria-live="polite"></p></section>
 <section id="recoveryPanel" class="panel hidden" aria-labelledby="recoveryTitle"><h2 id="recoveryTitle">Crear nueva contraseña</h2><form id="recoveryForm"><label for="newPassword">Nueva contraseña (mínimo 8 caracteres)</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required><button type="submit">Guardar nueva contraseña</button></form><p id="recoveryMessage" class="message" role="status" aria-live="polite"></p></section>
 <section id="adminPanel" class="panel hidden"><h2>Panel de administración FAST TRIP</h2><p>Bienvenido, administrador.</p><p>Desde aquí gestionaremos pasajeros, conductores, vehículos y reservas.</p><h3>Gestión de FAST TRIP</h3><button type="button" id="btnPasajeros">Pasajeros</button><div id="listaPasajeros"></div><button type="button" id="btnConductores">Conductores</button><div id="listaConductores"></div><button type="button" id="btnVehiculos">Vehículos</button><div id="listaVehiculos"></div><button type="button" id="btnReservas">Reservas</button><div id="listaReservas"></div><button type="button" id="btnSalir" class="secondary">Cerrar sesión</button></section>
+<section id="driverPanel" class="panel hidden"><h2>Panel del conductor FAST TRIP</h2><p id="driverStatus">Estado: Desconectado</p><button type="button" id="btnConectar">🟢 CONECTARSE</button><button type="button" id="btnDesconectar" class="secondary">🔴 DESCONECTARSE</button><p id="driverMessage" class="message" role="status" aria-live="polite"></p><button type="button" id="btnSalirConductor" class="secondary">Cerrar sesión</button></section>
 </main><footer>FAST TRIP · Guayaquil, Ecuador<br>Viaja a tu manera</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -58,8 +55,9 @@ const SITE_URL='https://ricardo45530.github.io/fast-trip/';
 const el=id=>document.getElementById(id);
 const message=(id,value)=>{el(id).textContent=value;};
 let client=null,recoveryMode=false;
-const authPanel=el('authPanel'),adminPanel=el('adminPanel'),recoveryPanel=el('recoveryPanel');
-function showRecovery(){recoveryMode=true;adminPanel.classList.add('hidden');authPanel.classList.add('hidden');recoveryPanel.classList.remove('hidden');}
+const authPanel=el('authPanel'),adminPanel=el('adminPanel'),driverPanel=el('driverPanel'),recoveryPanel=el('recoveryPanel');
+function ocultarPaneles(){adminPanel.classList.add('hidden');driverPanel.classList.add('hidden');}
+function showRecovery(){recoveryMode=true;ocultarPaneles();authPanel.classList.add('hidden');recoveryPanel.classList.remove('hidden');}
 async function verificarAdministrador(){
  if(!client)return false;
  const {data:{user}= {},error:userError}=await client.auth.getUser();
@@ -68,16 +66,55 @@ async function verificarAdministrador(){
  return !error&&data?.role==='admin'&&data?.status==='approved';
 }
 async function actualizarAcceso(){
- if(recoveryMode)return;
- try{const autorizado=await verificarAdministrador();adminPanel.classList.toggle('hidden',!autorizado);if(autorizado)message('loginMessage','Bienvenido a FAST TRIP.');}
- catch(err){console.error(err);adminPanel.classList.add('hidden');}
+ if(recoveryMode||!client)return;
+ ocultarPaneles();
+ const {data:{user}= {},error:userError}=await client.auth.getUser();
+ if(userError||!user){message('loginMessage','Inicia sesión para continuar.');return;}
+ const {data:perfil,error}=await client.from('profiles').select('role,status,is_available').eq('id',user.id).maybeSingle();
+ if(error){message('loginMessage','No se pudo consultar tu perfil: '+error.message);return;}
+ if(!perfil){message('loginMessage','No encontramos un perfil asociado a esta cuenta.');return;}
+ if(perfil.status!=='approved'){message('loginMessage','Tu cuenta todavía no está habilitada. Estado: '+(perfil.status||'sin estado'));return;}
+ if(perfil.role==='admin'){
+  adminPanel.classList.remove('hidden');message('loginMessage','Bienvenido, administrador FAST TRIP.');
+ }else if(perfil.role==='driver'){
+  driverPanel.classList.remove('hidden');mostrarDisponibilidad(perfil.is_available===true);message('driverMessage','');message('loginMessage','Bienvenido, conductor FAST TRIP.');
+ }else{message('loginMessage','Bienvenido a FAST TRIP.');}
+}
+function mostrarDisponibilidad(disponible){
+ el('driverStatus').textContent='Estado: '+(disponible?'Conectado':'Desconectado');
+ el('btnConectar').disabled=disponible;
+ el('btnDesconectar').disabled=!disponible;
+}
+async function cambiarDisponibilidad(disponible){
+ if(!client||driverPanel.classList.contains('hidden'))return;
+ el('btnConectar').disabled=true;el('btnDesconectar').disabled=true;
+ message('driverMessage','Actualizando disponibilidad...');
+ try{
+  const {data,error}=await client.rpc('set_driver_availability',{p_available:disponible});
+  if(error)throw error;
+  if(data!==true){message('driverMessage','No se pudo actualizar. Comprueba que tu cuenta esté aprobada.');await actualizarAcceso();return;}
+  const {data:{user},error:userError}=await client.auth.getUser();
+  if(userError||!user)throw new Error('La sesión no está disponible.');
+  const {data:perfil,error:perfilError}=await client.from('profiles').select('role,status,is_available').eq('id',user.id).maybeSingle();
+  if(perfilError||perfil?.role!=='driver'||perfil?.status!=='approved')throw new Error('No se pudo verificar tu perfil aprobado.');
+  mostrarDisponibilidad(perfil.is_available===true);
+  message('driverMessage',perfil.is_available===disponible?(disponible?'Ahora estás conectado.':'Ahora estás desconectado.'):'No se confirmó el cambio de disponibilidad.');
+ }catch(err){message('driverMessage','No se pudo cambiar la disponibilidad: '+(err?.message||'error desconocido'));}
+ finally{if(!driverPanel.classList.contains('hidden')){
+  const {data:{user}= {}}=await client.auth.getUser();
+  if(user){const {data}=await client.from('profiles').select('is_available').eq('id',user.id).maybeSingle();if(data)mostrarDisponibilidad(data.is_available===true);else{el('btnConectar').disabled=false;el('btnDesconectar').disabled=false;}}
+ }}
+}
+async function cerrarSesion(){
+ if(client){const {error}=await client.auth.signOut();if(error){message('loginMessage','No se pudo cerrar sesión: '+error.message);return;}}
+ ocultarPaneles();message('loginMessage','Sesión cerrada.');
 }
 async function initialize(){
  if(!window.supabase){message('loginMessage','No se pudo cargar Supabase. Comprueba tu conexión.');return;}
  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
  client.auth.onAuthStateChange(event=>{
   if(event==='PASSWORD_RECOVERY')showRecovery();
-  if(event==='SIGNED_OUT'){adminPanel.classList.add('hidden');}
+  if(event==='SIGNED_OUT'){ocultarPaneles();}
   if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')setTimeout(()=>{void actualizarAcceso();},0);
  });
  const params=new URLSearchParams(location.search),fragment=new URLSearchParams(location.hash.slice(1));
@@ -90,7 +127,7 @@ el('loginForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!client)return;
  const email=el('loginEmail').value.trim(),password=el('loginPassword').value;
  message('loginMessage','Comprobando acceso...');
- try{const {error}=await client.auth.signInWithPassword({email,password});if(error){message('loginMessage','No se pudo iniciar sesión. Revisa tus datos.');return;}el('loginPassword').value='';await actualizarAcceso();if(adminPanel.classList.contains('hidden'))message('loginMessage','Sesión iniciada. El panel de administración requiere aprobación.');}
+ try{const {error}=await client.auth.signInWithPassword({email,password});if(error){message('loginMessage','No se pudo iniciar sesión. Revisa tus datos.');return;}el('loginPassword').value='';await actualizarAcceso();}
  catch(err){message('loginMessage','Error de conexión. Intenta nuevamente.');}
 });
 el('forgotButton').addEventListener('click',async()=>{
@@ -109,7 +146,10 @@ el('recoveryForm').addEventListener('submit',async event=>{
  el('recoveryForm').reset();await client.auth.signOut();recoveryMode=false;recoveryPanel.classList.add('hidden');authPanel.classList.remove('hidden');history.replaceState({},'',location.pathname);message('loginMessage','Contraseña actualizada. Inicia sesión con tu nueva contraseña.');}
  catch(err){message('recoveryMessage','Error de conexión. Intenta nuevamente.');}
 });
-el('btnSalir').addEventListener('click',async()=>{if(client)await client.auth.signOut();adminPanel.classList.add('hidden');message('loginMessage','Sesión cerrada.');});
+el('btnSalir').addEventListener('click',cerrarSesion);
+el('btnSalirConductor').addEventListener('click',cerrarSesion);
+el('btnConectar').addEventListener('click',()=>{void cambiarDisponibilidad(true);});
+el('btnDesconectar').addEventListener('click',()=>{void cambiarDisponibilidad(false);});
 async function requireAdmin(listId){if(!client||!(await verificarAdministrador())){message(listId,'Acceso no autorizado.');adminPanel.classList.add('hidden');return false;}return true;}
 function addEntry(lista,lines){const p=document.createElement('div');p.className='entry';p.textContent=lines.join('\n');lista.appendChild(p);return p;}
 function addAction(container,title,handler){const b=document.createElement('button');b.type='button';b.textContent=title;b.addEventListener('click',async()=>{b.disabled=true;try{await handler();}catch(err){alert('Error de conexión: '+(err?.message||'desconocido'));}finally{b.disabled=false;}});container.appendChild(b);}
@@ -152,7 +192,7 @@ el('btnReservas').addEventListener('click',async()=>{
  const lista=el('listaReservas');lista.textContent='Consultando reservas...';try{
  if(!await requireAdmin('listaReservas'))return;
  const {data,error}=await client.from('trips').select('id,service_type,origin_text,destination_text,scheduled_at,status,driver_id,vehicle_id,total_amount').order('created_at',{ascending:false}).limit(50);
- if(error){lista.textContent='Error: '+error.message;return;}
+ if(error){lista.textContent='Error al consultar: '+error.message;return;}
  if(!data?.length){lista.textContent='No hay reservas registradas.';return;}
  lista.replaceChildren();for(const viaje of data){const amount=viaje.total_amount==null?'Pendiente de cálculo':Number(viaje.total_amount);const item=addEntry(lista,['Servicio: '+(viaje.service_type||'Sin especificar'),'Origen: '+(viaje.origin_text||'Sin especificar'),'Destino: '+(viaje.destination_text||'Sin especificar'),'Fecha: '+(viaje.scheduled_at||'Por coordinar'),'Estado: '+(viaje.status||'Sin estado'),'Tarifa: '+(typeof amount==='number'&&Number.isFinite(amount)?'$'+amount.toFixed(2):amount)]);
  if(!viaje.driver_id&&!viaje.vehicle_id)addAction(item,'Asignar conductor',()=>asignarReserva(viaje.id));
