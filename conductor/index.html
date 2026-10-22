@@ -336,5 +336,13 @@ initialize().catch(error => {
     'Error al iniciar: ' + error.message);
 });
 </script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Error SW:", error));
+  });
+}
+</script>  
 </body>
 </html>
