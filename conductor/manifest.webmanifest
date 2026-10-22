@@ -1,0 +1,11 @@
+{
+  "name": "FAST TRIP Conductor",
+  "short_name": "FT Conductor",
+  "description": "Aplicación de conductores de FAST TRIP ECUADOR",
+  "start_url": "/fast-trip/conductor/",
+  "scope": "/fast-trip/conductor/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "es-EC"
+}
