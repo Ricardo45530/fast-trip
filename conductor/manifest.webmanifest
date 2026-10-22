@@ -1,6 +1,7 @@
 {
   "name": "FAST TRIP Conductor",
   "short_name": "FT Conductor",
+"id": "/fast-trip/conductor/",
   "description": "Aplicación de conductores de FAST TRIP ECUADOR",
   "start_url": "/fast-trip/conductor/",
   "scope": "/fast-trip/conductor/",
