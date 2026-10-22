@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>FAST TRIP Conductor</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #080808;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+header { padding: 35px 15px 15px; }
+h1 { color: #e0b957; font-size: 32px; margin-bottom: 8px; }
+h2 { color: #e0b957; }
+.subtitle { color: #ddd; }
+main { max-width: 520px; margin: auto; padding: 15px; }
+.panel {
+  background: #171717;
+  border: 1px solid #aa873c;
+  border-radius: 16px;
+  padding: 25px 20px;
+  margin: 20px 0;
+}
+label { display: block; text-align: left; margin: 15px 0 7px; }
+input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #c6a04a;
+  border-radius: 9px;
+  background: #292929;
+  color: white;
+  font-size: 16px;
+}
+button {
+  display: inline-block;
+  margin: 12px 5px;
+  padding: 15px 20px;
+  background: linear-gradient(155deg,#fff0b7,#d6a335,#966615);
+  border: 1px solid #ffe5a1;
+  border-radius: 12px;
+  color: #241800;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:disabled { opacity: .5; cursor: not-allowed; }
+.secondary {
+  background: #242424;
+  color: #e0b957;
+  border: 1px solid #c6a04a;
+}
+.hidden { display: none !important; }
+#driverStatus { font-size: 21px; font-weight: bold; }
+.message { min-height: 25px; line-height: 1.5; overflow-wrap: anywhere; }
+footer { color: #aaa; padding: 25px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>FAST TRIP</h1>
+<p class="subtitle">CONDUCTOR · ECUADOR</p>
+<p>LO HACEMOS DIFERENTE</p>
+</header>
+
+<main>
+<section id="loginPanel" class="panel">
+<h2>Acceso del conductor</h2>
+<p>Ingresa con tu cuenta aprobada.</p>
+
+<form id="loginForm">
+<label for="email">Correo electrónico</label>
+<input id="email" type="email" autocomplete="email" required>
+
+<label for="password">Contraseña</label>
+<input id="password" type="password" autocomplete="current-password" required>
+
+<button type="submit" id="loginButton">Iniciar sesión</button>
+</form>
+
+<p id="loginMessage" class="message" role="status"></p>
+</section>
+
+<section id="driverPanel" class="panel hidden">
+<h2>Panel del conductor</h2>
+<p id="driverName">Bienvenido a FAST TRIP</p>
+
+<p id="driverStatus">Estado: Desconectado</p>
+
+<button id="btnConectar" type="button">
+🟢 CONECTARSE
+</button>
+
+<button id="btnDesconectar" type="button" class="secondary">
+🔴 DESCONECTARSE
+</button>
+
+<p id="driverMessage" class="message" role="status"></p>
+
+<button id="btnSalir" type="button" class="secondary">
+Cerrar sesión
+</button>
+</section>
+</main>
+
+<footer>FAST TRIP ECUADOR · LO HACEMOS DIFERENTE</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+const SUPABASE_URL =
+'https://ftiuzwwshcocvkvtdngm.supabase.co';
+
+const SUPABASE_KEY =
+'sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
+
+const el = id => document.getElementById(id);
+
+let client = null;
+let currentDriver = null;
+let busy = false;
+
+function showMessage(id, text) {
+  el(id).textContent = text;
+}
+
+function showLogin() {
+  currentDriver = null;
+  el('driverPanel').classList.add('hidden');
+  el('loginPanel').classList.remove('hidden');
+}
+
+function showDriver() {
+  el('loginPanel').classList.add('hidden');
+  el('driverPanel').classList.remove('hidden');
+}
+
+function updateStatus(available) {
+  el('driverStatus').textContent =
+    available ? 'Estado: Conectado' : 'Estado: Desconectado';
+
+  el('btnConectar').disabled = busy || available;
+  el('btnDesconectar').disabled = busy || !available;
+}
+
+async function checkDriver() {
+  if (!client) return;
+
+  const { data: authData, error: authError } =
+    await client.auth.getUser();
+
+  const user = authData?.user;
+
+  if (authError || !user) {
+    showLogin();
+    return;
+  }
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('id,full_name,role,status,is_available')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    showLogin();
+    showMessage('loginMessage',
+      'No se pudo consultar el perfil: ' + error.message);
+    return;
+  }
+
+  if (!data ||
+      data.role !== 'driver' ||
+      data.status !== 'approved') {
+    showLogin();
+    showMessage('loginMessage',
+      'Esta cuenta no tiene acceso como conductor aprobado.');
+    return;
+  }
+
+  currentDriver = data;
+
+  el('driverName').textContent =
+    'Bienvenido, ' + (data.full_name || 'conductor FAST TRIP');
+
+  showDriver();
+  updateStatus(data.is_available === true);
+}
+
+async function setAvailability(available) {
+  if (!client || !currentDriver || busy) return;
+
+  busy = true;
+  updateStatus(currentDriver.is_available === true);
+
+  showMessage('driverMessage', 'Guardando disponibilidad...');
+
+  try {
+    const { data: authData, error: authError } =
+      await client.auth.getUser();
+
+    if (authError ||
+        authData?.user?.id !== currentDriver.id) {
+      throw new Error('La sesión ya no es válida.');
+    }
+
+    const { data, error } = await client
+      .from('profiles')
+      .update({ is_available: available })
+      .eq('id', currentDriver.id)
+      .eq('role', 'driver')
+      .eq('status', 'approved')
+      .select('is_available')
+      .single();
+
+    if (error) throw error;
+
+    if (data?.is_available !== available) {
+      throw new Error('No se confirmó el cambio.');
+    }
+
+    currentDriver.is_available = data.is_available;
+
+    showMessage('driverMessage',
+      available
+        ? 'Ahora estás conectado.'
+        : 'Ahora estás desconectado.');
+
+  } catch (error) {
+    showMessage('driverMessage',
+      'No se pudo cambiar la disponibilidad: ' +
+      error.message);
+  } finally {
+    busy = false;
+    updateStatus(currentDriver.is_available === true);
+  }
+}
+
+async function initialize() {
+  if (!window.supabase) {
+    showMessage('loginMessage',
+      'No se pudo cargar Supabase. Revisa Internet.');
+    return;
+  }
+
+  client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
+
+  client.auth.onAuthStateChange(event => {
+    if (event === 'SIGNED_OUT') {
+      showLogin();
+    }
+
+    if (event === 'SIGNED_IN' ||
+        event === 'INITIAL_SESSION') {
+      setTimeout(() => {
+        void checkDriver();
+      }, 0);
+    }
+  });
+
+  await checkDriver();
+}
+
+el('loginForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!client) return;
+
+  const button = el('loginButton');
+  button.disabled = true;
+
+  showMessage('loginMessage', 'Verificando conductor...');
+
+  try {
+    const email = el('email').value.trim();
+    const password = el('password').value;
+
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      throw new Error('Correo o contraseña incorrectos.');
+    }
+
+    el('password').value = '';
+    await checkDriver();
+
+  } catch (error) {
+    showMessage('loginMessage', error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+el('btnConectar').addEventListener('click', () => {
+  void setAvailability(true);
+});
+
+el('btnDesconectar').addEventListener('click', () => {
+  void setAvailability(false);
+});
+
+el('btnSalir').addEventListener('click', async () => {
+  if (!client || busy) return;
+
+  try {
+    await client.auth.signOut();
+    showLogin();
+    showMessage('loginMessage', 'Sesión cerrada.');
+  } catch (error) {
+    showMessage('driverMessage',
+      'No se pudo cerrar la sesión: ' + error.message);
+  }
+});
+
+initialize().catch(error => {
+  showMessage('loginMessage',
+    'Error al iniciar: ' + error.message);
+});
+</script>
+</body>
+</html>
