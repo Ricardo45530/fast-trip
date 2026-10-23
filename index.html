@@ -155,8 +155,46 @@ async function cargarPerfiles(role,listId){
  const {data,error}=await client.from('profiles').select('id,full_name,phone,role,status').eq('role',role).limit(100);
  if(error){lista.textContent='Error al consultar: '+error.message;return;}
  if(!data?.length){lista.textContent=role==='passenger'?'No hay pasajeros registrados.':'No hay conductores registrados.';return;}
- lista.replaceChildren();for(const p of data){const item=addEntry(lista,[p.full_name||'Sin nombre',p.phone||'Sin teléfono','Estado: '+(p.status||'Sin estado')]);if(p.status==='pending'){addAction(item,'Aprobar',()=>actualizarPerfil(p.id,role,'approved'));addAction(item,'Rechazar',()=>actualizarPerfil(p.id,role,'rejected'));}}
+ lista.replaceChildren();for(const p of data){const item=addEntry(lista,[p.full_name||'Sin nombre',p.phone||'Sin teléfono','Estado: '+(p.status||'Sin estado')]);if(p.status==='pending'){addAction(item,'Aprobar',()=>actualizarPerfil(p.id,role,'approved'));addAction(item,'Rechazar',()=>actualizarPerfil(p.id,role,'rejected'));
+if (p.status === 'approved') {
+  addAction(item,'Bloquear',()=>cambiarBloqueo(p.id,role,p.status));
 }
+if(p.status==='blocked'){
+  addAction(item,'Rehabilitar',()=>cambiarBloqueo(p.id,role,p.status));
+}
+}
+                                             }                                           
+async function cambiarBloqueo(id, role, estado) {
+  if (!client || !await verificarAdministrador()) {
+    alert('Acceso no autorizado.');
+    return;
+  }
+
+  const nuevoEstado = estado === 'approved' ? 'blocked' : 'approved';
+
+  if (!confirm('¿Confirmas cambiar el estado de este usuario?')) return;
+
+  const { data, error } = await client
+    .from('profiles')
+    .update({ status: nuevoEstado })
+    .eq('id', id)
+    .eq('role', role)
+    .eq('status', estado)
+    .select('id');
+
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('No se pudo actualizar. Revisa los permisos.');
+    return;
+  }
+
+  alert('Estado actualizado correctamente.');
+  el(role === 'passenger' ? 'btnPasajeros' : 'btnConductores').click();
+} 
 el('btnPasajeros').addEventListener('click',()=>{void cargarPerfiles('passenger','listaPasajeros').catch(err=>message('listaPasajeros','Error: '+err.message));});
 el('btnConductores').addEventListener('click',()=>{void cargarPerfiles('driver','listaConductores').catch(err=>message('listaConductores','Error: '+err.message));});
 el('btnVehiculos').addEventListener('click',async()=>{
