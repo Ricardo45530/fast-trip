@@ -25,7 +25,7 @@ const SUPABASE_URL='https://ftiuzwwshcocvkvtdngm.supabase.co';
 const SUPABASE_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
 const el=id=>document.getElementById(id);
 const showMessage=(id,text)=>{el(id).textContent=text;};
-let client=null,currentDriver=null,busy=false,checkVersion=0,refreshTimer=null,refreshing=false;
+let client=null,currentDriver=null,busy=false,checkVersion=0,refreshTimer=null,refreshing=false,realtimeChannels=[],realtimeRetry=null;
 const navPref=el('navPreference');
 navPref.value=localStorage.getItem('fasttrip_nav')==='waze'?'waze':'google';
 navPref.addEventListener('change',()=>localStorage.setItem('fasttrip_nav',navPref.value));
@@ -36,8 +36,35 @@ function openMap(place){
  const url=navPref.value==='waze'?'https://waze.com/ul?q='+q+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+q;
  window.open(url,'_blank','noopener,noreferrer');
 }
-function stopRefresh(){if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}}
-function startRefresh(){stopRefresh();refreshTimer=setInterval(()=>{if(currentDriver?.is_available&&!document.hidden)void refreshTrips();},15000);}
+// Realtime usa los permisos RLS de Supabase; el intervalo es respaldo.
+function stopRealtime(){
+ if(realtimeRetry){clearTimeout(realtimeRetry);realtimeRetry=null;}
+ if(client)for(const channel of realtimeChannels)void client.removeChannel(channel);
+ realtimeChannels=[];
+}
+function startRealtime(){
+ stopRealtime();
+ if(!client||!currentDriver||!currentDriver.is_available)return;
+ const driverId=currentDriver.id;
+ const onChange=()=>{if(currentDriver?.id===driverId&&currentDriver.is_available)void refreshTrips();};
+ const subscribe=(name,filter)=>{
+  const channel=client.channel(name+'-'+driverId)
+   .on('postgres_changes',{event:'*',schema:'public',table:'trips',...(filter?{filter}:{})},onChange)
+   .subscribe(status=>{
+    if(status==='SUBSCRIBED')onChange();
+    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+     if(!realtimeRetry)realtimeRetry=setTimeout(()=>{realtimeRetry=null;startRealtime();},5000);
+    }
+   });
+  realtimeChannels.push(channel);
+ };
+ // Solicitudes pendientes: los INSERT nuevos y UPDATE de asignación.
+ subscribe('fasttrip-pendientes',null);
+ // Viajes ya asignados a este conductor.
+ subscribe('fasttrip-asignados','driver_id=eq.'+driverId);
+}
+function stopRefresh(){stopRealtime();if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}}
+function startRefresh(){stopRefresh();startRealtime();refreshTimer=setInterval(()=>{if(currentDriver?.is_available&&!document.hidden)void refreshTrips();},15000);}
 function makeButton(label,action,disabled=false){const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=disabled;b.addEventListener('click',action);return b;}
 function appendText(parent,label,value){const p=document.createElement('p');p.textContent=label+': '+(value||'Sin especificar');parent.appendChild(p);}
 async function refreshTrips(){if(refreshing)return;refreshing=true;try{await Promise.all([cargarViajes(),cargarAsignados()]);}finally{refreshing=false;}}
@@ -250,6 +277,8 @@ async function cargarAsignados(){
   card.appendChild(note);box.appendChild(card);
  });
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentDriver)void refreshTrips();});
+window.addEventListener('online',()=>{if(currentDriver){if(currentDriver.is_available)startRealtime();void refreshTrips();}});
 initialize().catch(error=>showMessage('loginMessage','Error al iniciar: '+error.message));
 if('serviceWorker' in navigator){
  window.addEventListener('load',()=>{
