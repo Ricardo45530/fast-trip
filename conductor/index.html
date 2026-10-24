@@ -139,7 +139,49 @@ async function cargarViajes() {
       'Origen: ' + viaje.origin_text +
       ' | Destino: ' + viaje.destination_text;
 
-    lista.appendChild(tarjeta);
+const botonAceptar = document.createElement('button');
+botonAceptar.textContent = '🚕 ACEPTAR VIAJE';
+botonAceptar.style.marginTop = '12px';
+botonAceptar.style.padding = '12px';
+botonAceptar.style.background = '#d4af37';
+botonAceptar.style.color = '#000';
+botonAceptar.style.fontWeight = 'bold';
+botonAceptar.style.borderRadius = '10px';
+
+tarjeta.appendChild(botonAceptar);
+botonAceptar.onclick = async () => {
+  const { data: { user } } = await client.auth.getUser();
+
+  if (!user) {
+    alert('Debes iniciar sesión.');
+    return;
+  }
+
+  const { data, error } = await client
+    .from('trips')
+    .update({
+      driver_id: user.id,
+      status: 'accepted'
+    })
+    .eq('id', viaje.id)
+    .eq('status', 'pending')
+    .is('driver_id', null)
+    .select('id');
+
+  if (error) {
+    alert('No se pudo aceptar el viaje: ' + error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('Este viaje ya fue tomado por otro conductor.');
+    return;
+  }
+
+  alert('¡Viaje aceptado correctamente!');
+  await cargarViajes();
+};   
+   lista.appendChild(tarjeta);
   });
 }
  initialize().catch(error=>showMessage('loginMessage','Error al iniciar: '+error.message));
