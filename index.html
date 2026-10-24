@@ -5,13 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080808">
 <link rel="manifest" href="/fast-trip/manifest.json">
-<title>FAST TRIP | Viaja a tu manera</title>
+<title>FAST TRIP | Lo hacemos diferente</title>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}main{max-width:700px;margin:auto;padding:30px 20px}.logo{font-family:'Great Vibes',cursive;font-size:72px;font-weight:normal;color:#d7b45a;letter-spacing:2px;line-height:1.3}.intro{font-size:17px;line-height:1.7;color:#eee}.line{width:80px;border:1px solid #d7b45a;margin:25px auto}h2{color:#d7b45a;font-size:23px}.services{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}.service{border:1px solid #9d803e;border-radius:10px;padding:20px 10px;background:#111}.service h3{font-size:16px;color:#e0bd62}.service p{font-size:14px;color:#ddd;line-height:1.5}.button,button{display:inline-block;margin:12px 5px;background:#d7b45a;color:#111;text-decoration:none;padding:14px 22px;border:0;border-radius:7px;font-weight:bold;font-size:15px;cursor:pointer}.secondary{background:transparent;color:#d7b45a;border:1px solid #d7b45a}.panel{margin:24px auto;padding:22px;max-width:540px;background:#151515;border:1px solid #9d803e;border-radius:12px}.panel label{display:block;text-align:left;margin:12px 0 6px}.panel input{width:100%;padding:13px;border-radius:6px;border:1px solid #b99746;background:#242424;color:white;font-size:16px}.hidden{display:none!important}.message{line-height:1.5;min-height:20px;overflow-wrap:anywhere}.entry{border-top:1px solid #594821;padding:12px 0;text-align:left;white-space:pre-line;overflow-wrap:anywhere}.entry button{padding:9px 12px;margin:7px 4px 4px 0}footer{padding:22px;color:#aaa;border-top:1px solid #594821;font-size:13px}@media(max-width:420px){.services{grid-template-columns:1fr}.logo{font-size:32px}}
-button, .button {background: linear-gradient(155deg, #fff0b7 0%, #f2d077 18%, #d6a335 52%, #966615 86%, #64430d 100%);color: #261901;border: 1px solid #ffe5a1;border-radius: 13px;box-shadow: inset 0 2px 2px rgba(255,255,255,.75),inset 0 -3px 4px rgba(67,39,0,.48),0 5px 0 #65450f,0 9px 16px rgba(0,0,0,.55);text-shadow: 0 1px 0 rgba(255,255,255,.28);transition: transform .12s ease, box-shadow .12s ease;}
-button:active, .button:active {transform: translateY(4px);box-shadow: inset 0 2px 5px rgba(65,37,0,.38),0 1px 0 #65450f;}
-button:disabled {opacity:.5;cursor:not-allowed}
+button,.button{background:linear-gradient(155deg,#fff0b7 0%,#f2d077 18%,#d6a335 52%,#966615 86%,#64430d 100%);color:#261901;border:1px solid #ffe5a1;border-radius:13px;box-shadow:inset 0 2px 2px rgba(255,255,255,.75),inset 0 -3px 4px rgba(67,39,0,.48),0 5px 0 #65450f,0 9px 16px rgba(0,0,0,.55);text-shadow:0 1px 0 rgba(255,255,255,.28);transition:transform .12s ease,box-shadow .12s ease}button:active,.button:active{transform:translateY(4px);box-shadow:inset 0 2px 5px rgba(65,37,0,.38),0 1px 0 #65450f}button:disabled{opacity:.5;cursor:not-allowed}
+.password-wrap{position:relative}.password-wrap input{padding-right:66px}.password-wrap .toggle-password{position:absolute;right:5px;top:50%;transform:translateY(-50%);margin:0;padding:7px 9px;font-size:12px;box-shadow:none;border-radius:7px}.danger{background:#772222!important;color:#fff!important;border-color:#d88!important;text-shadow:none!important}.note{color:#e4c67a;font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -29,12 +28,12 @@ button:disabled {opacity:.5;cursor:not-allowed}
 <a class="button" href="mailto:fasttrip2027@gmail.com">Consultar una reserva</a>
 <section id="authPanel" class="panel"><h2>Acceso a FAST TRIP</h2>
 <p><a href="https://wa.me/593982831006?text=Hola%2C%20deseo%20registrarme%20como%20conductor%20de%20FAST%20TRIP." target="_blank" rel="noopener noreferrer" class="button">Registrarme como conductor</a></p>
-<form id="loginForm"><label for="loginEmail">Correo electrónico</label><input id="loginEmail" type="email" autocomplete="email" required><label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required><button type="submit">Iniciar sesión</button></form>
+<form id="loginForm"><label for="loginEmail">Correo electrónico</label><input id="loginEmail" type="email" autocomplete="email" required><label for="loginPassword">Contraseña</label><div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" required><button type="button" class="toggle-password" data-target="loginPassword" aria-label="Mostrar contraseña" aria-pressed="false">👁️ Ver</button></div><button type="submit">Iniciar sesión</button></form>
 <button type="button" id="forgotButton" class="secondary">Olvidé mi contraseña</button><p id="loginMessage" class="message" role="status" aria-live="polite"></p></section>
-<section id="recoveryPanel" class="panel hidden" aria-labelledby="recoveryTitle"><h2 id="recoveryTitle">Crear nueva contraseña</h2><form id="recoveryForm"><label for="newPassword">Nueva contraseña (mínimo 8 caracteres)</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required><button type="submit">Guardar nueva contraseña</button></form><p id="recoveryMessage" class="message" role="status" aria-live="polite"></p></section>
+<section id="recoveryPanel" class="panel hidden" aria-labelledby="recoveryTitle"><h2 id="recoveryTitle">Crear nueva contraseña</h2><form id="recoveryForm"><label for="newPassword">Nueva contraseña (mínimo 8 caracteres)</label><div class="password-wrap"><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><button type="button" class="toggle-password" data-target="newPassword" aria-label="Mostrar contraseña" aria-pressed="false">👁️ Ver</button></div><label for="confirmPassword">Confirmar contraseña</label><div class="password-wrap"><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required><button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Mostrar contraseña" aria-pressed="false">👁️ Ver</button></div><button type="submit">Guardar nueva contraseña</button></form><p id="recoveryMessage" class="message" role="status" aria-live="polite"></p></section>
 <section id="adminPanel" class="panel hidden"><h2>Panel de administración FAST TRIP</h2><p>Bienvenido, administrador.</p><p>Desde aquí gestionaremos pasajeros, conductores, vehículos y reservas.</p><h3>Gestión de FAST TRIP</h3><button type="button" id="btnPasajeros">Pasajeros</button><div id="listaPasajeros"></div><button type="button" id="btnConductores">Conductores</button><div id="listaConductores"></div><button type="button" id="btnVehiculos">Vehículos</button><div id="listaVehiculos"></div><button type="button" id="btnReservas">Reservas</button><div id="listaReservas"></div><button type="button" id="btnSalir" class="secondary">Cerrar sesión</button></section>
 <section id="driverPanel" class="panel hidden"><h2>Panel del conductor FAST TRIP</h2><p id="driverStatus">Estado: Desconectado</p><button type="button" id="btnConectar">🟢 CONECTARSE</button><button type="button" id="btnDesconectar" class="secondary">🔴 DESCONECTARSE</button><p id="driverMessage" class="message" role="status" aria-live="polite"></p><button type="button" id="btnSalirConductor" class="secondary">Cerrar sesión</button></section>
-</main><footer>FAST TRIP · Guayaquil, Ecuador<br>Viaja a tu manera</footer>
+</main><footer>FAST TRIP · Guayaquil, Ecuador<br>Lo hacemos diferente</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
@@ -47,6 +46,9 @@ let client=null,recoveryMode=false;
 const authPanel=el('authPanel'),adminPanel=el('adminPanel'),driverPanel=el('driverPanel'),recoveryPanel=el('recoveryPanel');
 function ocultarPaneles(){adminPanel.classList.add('hidden');driverPanel.classList.add('hidden');}
 function showRecovery(){recoveryMode=true;ocultarPaneles();authPanel.classList.add('hidden');recoveryPanel.classList.remove('hidden');}
+for(const button of document.querySelectorAll('.toggle-password')){
+ button.addEventListener('click',()=>{const input=el(button.dataset.target);const visible=input.type==='password';input.type=visible?'text':'password';button.textContent=visible?'🙈 Ocultar':'👁️ Ver';button.setAttribute('aria-label',visible?'Ocultar contraseña':'Mostrar contraseña');button.setAttribute('aria-pressed',String(visible));});
+}
 async function verificarAdministrador(){
  if(!client)return false;
  const {data:{user}= {},error:userError}=await client.auth.getUser();
@@ -58,7 +60,7 @@ async function actualizarAcceso(){
  if(recoveryMode||!client)return;
  ocultarPaneles();
  const {data:{user}= {},error:userError}=await client.auth.getUser();
- if(userError||!user){message('loginMessage','Inicia sesión para continuar.');return;}
+ if(userError||!user){authPanel.classList.remove('hidden');message('loginMessage','Inicia sesión para continuar.');return;}
  const {data:perfil,error}=await client.from('profiles').select('role,status,is_available').eq('id',user.id).maybeSingle();
  if(error){message('loginMessage','No se pudo consultar tu perfil: '+error.message);return;}
  if(!perfil){message('loginMessage','No encontramos un perfil asociado a esta cuenta.');return;}
@@ -96,7 +98,7 @@ async function cambiarDisponibilidad(disponible){
 }
 async function cerrarSesion(){
  if(client){const {error}=await client.auth.signOut();if(error){message('loginMessage','No se pudo cerrar sesión: '+error.message);return;}}
- ocultarPaneles();message('loginMessage','Sesión cerrada.');
+ ocultarPaneles();authPanel.classList.remove('hidden');message('loginMessage','Sesión cerrada.');
 }
 async function initialize(){
  if(!window.supabase){message('loginMessage','No se pudo cargar Supabase. Comprueba tu conexión.');return;}
@@ -141,7 +143,7 @@ el('btnConectar').addEventListener('click',()=>{void cambiarDisponibilidad(true)
 el('btnDesconectar').addEventListener('click',()=>{void cambiarDisponibilidad(false);});
 async function requireAdmin(listId){if(!client||!(await verificarAdministrador())){message(listId,'Acceso no autorizado.');adminPanel.classList.add('hidden');return false;}return true;}
 function addEntry(lista,lines){const p=document.createElement('div');p.className='entry';p.textContent=lines.join('\n');lista.appendChild(p);return p;}
-function addAction(container,title,handler){const b=document.createElement('button');b.type='button';b.textContent=title;b.addEventListener('click',async()=>{b.disabled=true;try{await handler();}catch(err){alert('Error de conexión: '+(err?.message||'desconocido'));}finally{b.disabled=false;}});container.appendChild(b);}
+function addAction(container,title,handler,danger=false){const b=document.createElement('button');b.type='button';b.textContent=title;if(danger)b.classList.add('danger');b.addEventListener('click',async()=>{b.disabled=true;try{await handler();}catch(err){alert('Error de conexión: '+(err?.message||'desconocido'));}finally{b.disabled=false;}});container.appendChild(b);}
 async function actualizarPerfil(id,role,estado){
  if(!await verificarAdministrador())return;
  if(!confirm('¿Confirmar '+(estado==='approved'?'aprobación':'rechazo')+'?'))return;
@@ -155,46 +157,41 @@ async function cargarPerfiles(role,listId){
  const {data,error}=await client.from('profiles').select('id,full_name,phone,role,status').eq('role',role).limit(100);
  if(error){lista.textContent='Error al consultar: '+error.message;return;}
  if(!data?.length){lista.textContent=role==='passenger'?'No hay pasajeros registrados.':'No hay conductores registrados.';return;}
- lista.replaceChildren();for(const p of data){const item=addEntry(lista,[p.full_name||'Sin nombre',p.phone||'Sin teléfono','Estado: '+(p.status||'Sin estado')]);if(p.status==='pending'){addAction(item,'Aprobar',()=>actualizarPerfil(p.id,role,'approved'));addAction(item,'Rechazar',()=>actualizarPerfil(p.id,role,'rejected'));
-if (p.status === 'approved') {
-  addAction(item,'Bloquear',()=>cambiarBloqueo(p.id,role,p.status));
-}
-if(p.status==='blocked'){
-  addAction(item,'Rehabilitar',()=>cambiarBloqueo(p.id,role,p.status));
-}
-}
-                                             }                                           
-async function cambiarBloqueo(id, role, estado) {
-  if (!client || !await verificarAdministrador()) {
-    alert('Acceso no autorizado.');
-    return;
+ lista.replaceChildren();
+ for(const p of data){
+  const item=addEntry(lista,[p.full_name||'Sin nombre',p.phone||'Sin teléfono','Estado: '+(p.status||'Sin estado')]);
+  if(p.status==='pending'){
+   addAction(item,'Aprobar',()=>actualizarPerfil(p.id,role,'approved'));
+   addAction(item,'Rechazar',()=>actualizarPerfil(p.id,role,'rejected'));
   }
-
-  const nuevoEstado = estado === 'approved' ? 'blocked' : 'approved';
-
-  if (!confirm('¿Confirmas cambiar el estado de este usuario?')) return;
-
-  const { data, error } = await client
-    .from('profiles')
-    .update({ status: nuevoEstado })
-    .eq('id', id)
-    .eq('role', role)
-    .eq('status', estado)
-    .select('id');
-
-  if (error) {
-    alert('Error: ' + error.message);
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    alert('No se pudo actualizar. Revisa los permisos.');
-    return;
-  }
-
-  alert('Estado actualizado correctamente.');
-  el(role === 'passenger' ? 'btnPasajeros' : 'btnConductores').click();
-} 
+  if(p.status==='approved')addAction(item,'Bloquear',()=>cambiarBloqueo(p.id,role,p.status));
+  if(p.status==='blocked')addAction(item,'Rehabilitar',()=>cambiarBloqueo(p.id,role,p.status));
+  addAction(item,'🗑️ Eliminar',()=>solicitarEliminacion(p.id,role,p.full_name||'Sin nombre'),true);
+ }
+}
+async function cambiarBloqueo(id,role,estado){
+ if(!client||!await verificarAdministrador()){alert('Acceso no autorizado.');return;}
+ if(!['approved','blocked'].includes(estado)){alert('Estado no válido.');return;}
+ const nuevoEstado=estado==='approved'?'blocked':'approved';
+ if(!confirm('¿Confirmas '+(nuevoEstado==='blocked'?'bloquear':'rehabilitar')+' este usuario?'))return;
+ const {data,error}=await client.from('profiles').update({status:nuevoEstado,...(role==='driver'&&nuevoEstado==='blocked'?{is_available:false}:{})}).eq('id',id).eq('role',role).eq('status',estado).select('id');
+ if(error){alert('Error: '+error.message);return;}
+ if(!data?.length){alert('No se pudo actualizar. Revisa los permisos y el estado actual.');return;}
+ alert('Estado actualizado correctamente.');el(role==='passenger'?'btnPasajeros':'btnConductores').click();
+}
+// La eliminación de cuentas de Auth NO debe hacerse con la clave pública del navegador.
+// Esta acción requiere una función RPC segura 'admin_delete_account' instalada en Supabase,
+// con verificación del administrador, control de dependencias y eliminación en Auth.
+async function solicitarEliminacion(id,role,nombre){
+ if(!client||!await verificarAdministrador()){alert('Acceso no autorizado.');return;}
+ if(!confirm('¿Solicitar la eliminación DEFINITIVA de '+nombre+'? Esta acción puede afectar su historial.'))return;
+ const palabra=prompt('Escribe ELIMINAR para confirmar:');
+ if(palabra!=='ELIMINAR'){alert('Eliminación cancelada.');return;}
+ const {data,error}=await client.rpc('admin_delete_account',{p_user_id:id,p_role:role});
+ if(error){alert('No se eliminó la cuenta. Falta configurar o autorizar la función segura admin_delete_account en Supabase. Detalle: '+error.message);return;}
+ if(data!==true){alert('No se confirmó la eliminación. Verifica el resultado en Supabase.');return;}
+ alert('Eliminación confirmada por el servidor.');el(role==='passenger'?'btnPasajeros':'btnConductores').click();
+}
 el('btnPasajeros').addEventListener('click',()=>{void cargarPerfiles('passenger','listaPasajeros').catch(err=>message('listaPasajeros','Error: '+err.message));});
 el('btnConductores').addEventListener('click',()=>{void cargarPerfiles('driver','listaConductores').catch(err=>message('listaConductores','Error: '+err.message));});
 el('btnVehiculos').addEventListener('click',async()=>{
@@ -247,7 +244,6 @@ async function asignarReserva(viajeId){
 }
 el('btnViajeHora').addEventListener('click',()=>alert('El servicio de viaje por hora está previsto. La solicitud en la aplicación aún no está habilitada. Para consultar una reserva, utiliza el enlace de correo.'));
 initialize().catch(err=>message('loginMessage','Error al iniciar: '+err.message));
-}
 </script>
 </body>
 </html>
