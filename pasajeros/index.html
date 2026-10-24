@@ -1,68 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-  <title>FAST TRIP Pasajeros</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #000;
-      font-family: Arial, sans-serif;
-    }
-
-    .bienvenida {
-      min-height: 100vh;
-      min-height: 100dvh;
-      background-image: url("logo%20pasajeros.jpeg");
-      background-position: center;
-      background-size: cover;
-      background-repeat: no-repeat;
-
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      padding: 30px 20px 60px;
-    }
-
-    .boton {
-      background: linear-gradient(
-        135deg,
-        #f8df86,
-        #c99a27
-      );
-      color: #111;
-      border: none;
-      border-radius: 30px;
-      padding: 18px 30px;
-      font-size: 19px;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-      max-width: 320px;
-    }
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080808"><title>FAST TRIP Pasajeros</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:white;font-family:Arial,sans-serif} .bienvenida{min-height:100vh;min-height:100dvh;background:url('logo%20pasajeros.jpeg') center/cover no-repeat;display:flex;align-items:flex-end;justify-content:center;padding:30px 20px 60px}.boton,button{background:linear-gradient(135deg,#f8df86,#c99a27);color:#111;border:0;border-radius:25px;padding:15px 25px;font-size:17px;font-weight:bold;cursor:pointer}.bienvenida .boton{width:100%;max-width:320px} .panel{max-width:480px;margin:25px auto;padding:24px;background:#171717;border:1px solid #bd9535;border-radius:14px}h2{color:#e9c65b}label{display:block;margin:14px 0 6px}input,select{width:100%;padding:13px;background:#292929;color:white;border:1px solid #b99a4a;border-radius:8px;font-size:16px}button{margin:12px 5px 0 0}.secondary{background:#333;color:#f8df86;border:1px solid #a98735}.hidden{display:none!important}.message{line-height:1.5;overflow-wrap:anywhere}small{color:#ccc}#tripHistory article{border-top:1px solid #8b712f;padding:12px 0;white-space:pre-line}
+</style>
 </head>
-
 <body>
-
-  <main class="bienvenida">
-    <button class="boton" type="button" onclick="mostrarRegistro()">
-      Solicitar un viaje
-    </button>
-  </main>
+<section class="bienvenida" id="welcome"><button class="boton" id="startBtn">Solicitar un viaje</button></section>
+<section class="panel hidden" id="access"><h2>FAST TRIP Pasajeros</h2><p>Ingresa con la cuenta de pasajero aprobada por FAST TRIP.</p><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><label><input id="showPassword" type="checkbox" style="width:auto"> Mostrar contraseña</label><button type="submit">Ingresar</button></form><button id="recoverBtn" class="secondary" type="button">Recuperar contraseña</button><button id="backBtn" class="secondary" type="button">Volver</button><p id="accessMessage" class="message" role="status"></p><small>Si ya estás registrado y aprobado, no crees otra cuenta. Si todavía no tienes contraseña, solicita un enlace de recuperación con tu correo registrado.</small></section>
+<section class="panel hidden" id="reset"><h2>Crear nueva contraseña</h2><form id="resetForm"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="8" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" required><button type="submit">Guardar contraseña</button></form><p id="resetMessage" class="message"></p></section>
+<section class="panel hidden" id="tripPanel"><h2>Solicitar viaje</h2><p id="greeting"></p><form id="tripForm"><label for="origin">Origen (dirección de recogida)</label><input id="origin" maxlength="250" required placeholder="Ej. Urdesa, Guayaquil"><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="Ej. Mall del Sol, Guayaquil"><button type="submit" id="sendBtn">Enviar solicitud</button></form><p id="tripMessage" class="message" role="status"></p><h2>Mis solicitudes</h2><button id="refreshBtn" class="secondary" type="button">Actualizar estado</button><div id="tripHistory"></div><button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button></section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-function mostrarRegistro() {
-  alert("Bienvenido a FAST TRIP. Vamos a registrar tus datos.");
+'use strict';
+const SUPABASE_URL='https://ftiuzwwshcocvkvtdngm.supabase.co';
+const SUPABASE_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
+const REDIRECT_URL='https://ricardo45530.github.io/fast-trip/pasajeros/';
+const el=id=>document.getElementById(id);
+const setMessage=(id,text)=>el(id).textContent=text;
+let client=null,recovering=false,currentUser=null;
+function screen(id){for(const name of ['welcome','access','reset','tripPanel'])el(name).classList.toggle('hidden',name!==id);}
+async function checkPassenger(){
+ const {data:{user},error:userError}=await client.auth.getUser();
+ if(userError||!user){currentUser=null;screen('access');return;}
+ const {data:profile,error}=await client.from('profiles').select('id,full_name,role,status').eq('id',user.id).maybeSingle();
+ if(error){screen('access');setMessage('accessMessage','No se pudo consultar tu perfil: '+error.message);return;}
+ if(!profile||profile.role!=='passenger'||profile.status!=='approved'){
+  currentUser=null;screen('access');setMessage('accessMessage','Esta cuenta no tiene un perfil de pasajero aprobado. Consulta con Administración.');return;
+ }
+ currentUser=user;el('greeting').textContent='Bienvenido/a, '+(profile.full_name||'pasajero/a')+'.';screen('tripPanel');await loadTrips();
 }
-</script>        
-
-</body>
-</html>
+async function loadTrips(){
+ if(!currentUser)return;
+ const box=el('tripHistory');box.textContent='Consultando...';
+ const {data,error}=await client.from('trips').select('id,origin_text,destination_text,status,created_at').eq('passenger_id',currentUser.id).order('created_at',{ascending:false}).limit(15);
+ if(error){box.textContent='No se pudo consultar el historial: '+error.message;return;}
+ if(!data?.length){box.textContent='Todavía no tienes solicitudes.';return;}
+ box.replaceChildren();for(const trip of data){const article=document.createElement('article');article.textContent='Origen: '+(trip.origin_text||'')+'\nDestino: '+(trip.destination_text||'')+'\nEstado: '+(trip.status||'sin estado');box.appendChild(article);}
+}
+async function init(){
+ if(!window.supabase){screen('access');setMessage('accessMessage','No se pudo cargar Supabase. Revisa tu conexión.');return;}
+ client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;screen('access');}});
+ const hash=new URLSearchParams(location.hash.slice(1));const query=new URLSearchParams(location.search);
+ if(hash.get('type')==='recovery'||query.get('type')==='recovery')recovering=true;
+ const {data:{session}}=await client.auth.getSession();
+ if(recovering&&session){screen('reset');return;}
+ if(session)await checkPassenger();
+}
+el('startBtn').onclick=()=>{screen('access');if(client)void checkPassenger();};
+el('backBtn').onclick=()=>screen('welcome');
+el('showPassword').onchange=e=>{el('password').type=e.target.checked?'text':'password';};
+el('loginForm').onsubmit=async e=>{e.preventDefault();if(!client)return;setMessage('accessMessage','Verificando acceso...');const {error}=await client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});el('password').value='';if(error){setMessage('accessMessage','No se pudo iniciar sesión. Revisa tus datos o recupera tu contraseña.');return;}setMessage('accessMessage','');await checkPassenger();};
+el('recoverBtn').onclick=async()=>{if(!client)return;const email=el('email').value.trim();if(!email){setMessage('accessMessage','Primero escribe tu correo electrónico.');return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:REDIRECT_URL});setMessage('accessMessage',error?'No se pudo enviar el enlace: '+error.message:'Si existe una cuenta con ese correo, recibirás un enlace de recuperación.');};
+el('resetForm').onsubmit=async e=>{e.preventDefault();if(!client)return;const a=el('newPassword').value,b=el('confirmPassword').value;if(a.length<8||a!==b){setMessage('resetMessage','Las contraseñas deben coincidir y tener al menos 8 caracteres.');return;}const {error}=await client.auth.updateUser({password:a});if(error){setMessage('resetMessage',error.message);return;}await client.auth.signOut();recovering=false;history.replaceState({},'',location.pathname);screen('access');setMessage('accessMessage','Contraseña actualizada. Inicia sesión.');};
+el('tripForm').onsubmit=async e=>{e.preventDefault();if(!client||!currentUser)return;const origin=el('origin').value.trim(),destination=el('destination').value.trim();if(!origin||!destination||origin===destination){setMessage('tripMessage','Indica origen y destino diferentes.');return;}
+ const btn=el('sendBtn');btn.disabled=true;setMessage('tripMessage','Enviando solicitud...');
+ try{await checkPassenger();if(!currentUser){setMessage('accessMessage','Tu cuenta debe estar aprobada.');return;}
+ // El servidor debe imponer el pasajero autenticado, el estado pendiente y los permisos RLS.
+ const {error}=await client.from('trips').insert({passenger_id:currentUser.id,origin_text:origin,destination_text:destination,status:'pending'});
+ if(error){setMessage('tripMessage','No se pudo crear el viaje: '+error.message+'. Revisaremos las columnas y permisos de Supabase.');return;}
+ setMessage('tripMessage','Solicitud enviada. Pendiente de asignación; todavía no significa que un conductor la haya aceptado.');el('tripForm').reset();await loadTrips();
+ }catch(err){setMessage('tripMessage','Error: '+(err?.message||'desconocido'));}finally{btn.disabled=false;}
+};
+el('refreshBtn').onclick=()=>void loadTrips();el('logoutBtn').onclick=async()=>{if(client)await client.auth.signOut();screen('welcome');};
+init().catch(err=>{screen('access');setMessage('accessMessage','Error al iniciar: '+err.message);});
+</script>
+</body></html>
