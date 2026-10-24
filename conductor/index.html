@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <title>FAST TRIP | Conductor</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#080808 url('./fast%20trip%20fondo%20app.jpeg') center top/cover no-repeat fixed;color:#fff;font-family:Arial,sans-serif;text-align:center}header{padding:35px 15px 15px}h1,h2{color:#e0b957}h1{font-size:32px;margin-bottom:8px}.subtitle{color:#ddd}main{max-width:520px;margin:auto;padding:15px}.panel{background:#171717ee;border:1px solid #aa873c;border-radius:16px;padding:25px 20px;margin:20px 0}label{display:block;text-align:left;margin:15px 0 7px}input{width:100%;padding:14px;border:1px solid #c6a04a;border-radius:9px;background:#292929;color:white;font-size:16px}button{display:inline-block;margin:12px 5px;padding:15px 20px;background:linear-gradient(155deg,#fff0b7,#d6a335,#966615);border:1px solid #ffe5a1;border-radius:12px;color:#241800;font-size:16px;font-weight:bold;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#242424;color:#e0b957;border:1px solid #c6a04a}.hidden{display:none!important}#driverStatus{font-size:21px;font-weight:bold}.message{min-height:25px;line-height:1.5;overflow-wrap:anywhere}footer{color:#aaa;padding:25px;font-size:13px}
+*{box-sizing:border-box}body{margin:0;background:#080808 url('./fast%20trip%20fondo%20app.jpeg') center top/cover no-repeat fixed;color:#fff;font-family:Arial,sans-serif;text-align:center}header{padding:35px 15px 15px}h1,h2{color:#e0b957}h1{font-size:32px;margin-bottom:8px}.subtitle{color:#ddd}main{max-width:520px;margin:auto;padding:15px}.panel{background:#171717ee;border:1px solid #aa873c;border-radius:16px;padding:25px 20px;margin:20px 0}label{display:block;text-align:left;margin:15px 0 7px}input{width:100%;padding:14px;border:1px solid #c6a04a;border-radius:9px;background:#292929;color:white;font-size:16px}button{display:inline-block;margin:12px 5px;padding:15px 20px;background:linear-gradient(155deg,#fff0b7,#d6a335,#966615);border:1px solid #ffe5a1;border-radius:12px;color:#241800;font-size:16px;font-weight:bold;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}select{width:100%;padding:14px;border:1px solid #c6a04a;border-radius:9px;background:#292929;color:#fff;font-size:16px}.trip-card{padding:12px;border-bottom:1px solid #aa873c;overflow-wrap:anywhere}.secondary{background:#242424;color:#e0b957;border:1px solid #c6a04a}.hidden{display:none!important}#driverStatus{font-size:21px;font-weight:bold}.message{min-height:25px;line-height:1.5;overflow-wrap:anywhere}footer{color:#aaa;padding:25px;font-size:13px}
 </style>
 </head>
 <body>
@@ -16,7 +16,7 @@
 <section id="loginPanel" class="panel"><h2>Acceso del conductor</h2><p>Ingresa con tu cuenta aprobada.</p>
 <form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><button type="submit" id="loginButton">Iniciar sesión</button></form><p id="loginMessage" class="message" role="status" aria-live="polite"></p></section>
 <section id="driverPanel" class="panel hidden"><h2>Panel del conductor</h2><p id="driverName">Bienvenido a FAST TRIP</p><p id="driverStatus">Estado: Desconectado</p><button id="btnConectar" type="button">🟢 CONECTARSE</button><button id="btnDesconectar" type="button" class="secondary">🔴 DESCONECTARSE</button><p id="driverMessage" class="message" role="status" aria-live="polite"></p><button id="btnSalir" type="button" class="secondary">Cerrar sesión</button></section>
-<div id="viajesDisponibles" class="hidden"><h2>🚕 Viajes disponibles</h2><p id="mensajeViajes">Conéctate para recibir solicitudes de pasajeros.</p><div id="listaViajes"></div></div>
+<section id="navSettings" class="panel hidden"><h2>🗺️ Navegación</h2><label for="navPreference">Navegador preferido</label><select id="navPreference"><option value="google">Google Maps</option><option value="waze">Waze</option></select><p class="message">Puedes abrir la ruta hacia el punto de recogida. La navegación al destino del pasajero se habilitará cuando se implemente y valide el PIN de abordaje.</p></section><section id="viajeAsignado" class="panel hidden"><h2>🚕 Mi viaje asignado</h2><div id="detalleAsignado"></div></section><div id="viajesDisponibles" class="hidden"><h2>🚕 Viajes disponibles</h2><p id="mensajeViajes">Conéctate para recibir solicitudes de pasajeros.</p><div id="listaViajes"></div></div>
 </main><footer>FAST TRIP ECUADOR · LO HACEMOS DIFERENTE</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -25,12 +25,31 @@ const SUPABASE_URL='https://ftiuzwwshcocvkvtdngm.supabase.co';
 const SUPABASE_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
 const el=id=>document.getElementById(id);
 const showMessage=(id,text)=>{el(id).textContent=text;};
-let client=null,currentDriver=null,busy=false,checkVersion=0;
+let client=null,currentDriver=null,busy=false,checkVersion=0,refreshTimer=null,refreshing=false;
+const navPref=el('navPreference');
+navPref.value=localStorage.getItem('fasttrip_nav')==='waze'?'waze':'google';
+navPref.addEventListener('change',()=>localStorage.setItem('fasttrip_nav',navPref.value));
+function openMap(place){
+ const destination=String(place||'').trim();
+ if(!destination){alert('El pasajero no indicó una ubicación.');return;}
+ const q=encodeURIComponent(destination);
+ const url=navPref.value==='waze'?'https://waze.com/ul?q='+q+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+q;
+ window.open(url,'_blank','noopener,noreferrer');
+}
+function stopRefresh(){if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}}
+function startRefresh(){stopRefresh();refreshTimer=setInterval(()=>{if(currentDriver?.is_available&&!document.hidden)void refreshTrips();},15000);}
+function makeButton(label,action,disabled=false){const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=disabled;b.addEventListener('click',action);return b;}
+function appendText(parent,label,value){const p=document.createElement('p');p.textContent=label+': '+(value||'Sin especificar');parent.appendChild(p);}
+async function refreshTrips(){if(refreshing)return;refreshing=true;try{await Promise.all([cargarViajes(),cargarAsignados()]);}finally{refreshing=false;}}
 function clearTrips(message='Conéctate para recibir solicitudes de pasajeros.'){
  el('listaViajes').replaceChildren();
  el('mensajeViajes').textContent=message;
 }
 function showLogin(){
+ stopRefresh();
+ el('navSettings').classList.add('hidden');
+ el('viajeAsignado').classList.add('hidden');
+ el('detalleAsignado').replaceChildren();
  currentDriver=null;
  el('driverPanel').classList.add('hidden');
  el('loginPanel').classList.remove('hidden');
@@ -41,12 +60,14 @@ function showDriver(){
  el('loginPanel').classList.add('hidden');
  el('driverPanel').classList.remove('hidden');
  el('viajesDisponibles').classList.remove('hidden');
+ el('navSettings').classList.remove('hidden');
+ el('viajeAsignado').classList.remove('hidden');
 }
 function updateStatus(available){
  el('driverStatus').textContent=available?'Estado: Conectado':'Estado: Desconectado';
  el('btnConectar').disabled=busy||available;
  el('btnDesconectar').disabled=busy||!available;
- if(!available)clearTrips();
+ if(!available){clearTrips();stopRefresh();}
 }
 async function checkDriver(){
  if(!client)return;
@@ -68,7 +89,7 @@ async function checkDriver(){
   showDriver();
   updateStatus(data.is_available===true);
   showMessage('loginMessage','');
-  if(data.is_available===true)void cargarViajes();
+  if(data.is_available===true){void refreshTrips();startRefresh();}else{void cargarAsignados();}
  }catch(error){
   if(version!==checkVersion)return;
   showLogin();
@@ -92,7 +113,7 @@ async function setAvailability(available){
   currentDriver.is_available=profile.is_available===true;
   if(currentDriver.is_available!==available)throw new Error('No se confirmó el cambio en Supabase.');
   showMessage('driverMessage',available?'Ahora estás conectado.':'Ahora estás desconectado.');
-  if(available)await cargarViajes();
+  if(available){await refreshTrips();startRefresh();}else{await cargarAsignados();}
  }catch(error){
   showMessage('driverMessage','No se pudo cambiar la disponibilidad: '+(error?.message||'error desconocido'));
  }finally{
@@ -188,11 +209,11 @@ async function cargarViajes(){
     if(rpcError)throw rpcError;
     if(accepted!==true){
      alert('No se pudo aceptar el viaje. Puede que otro conductor ya lo haya tomado.');
-     await cargarViajes();
+     await refreshTrips();
      return;
     }
     alert('¡Viaje aceptado correctamente!');
-    await cargarViajes();
+    await refreshTrips();
    }catch(error){
     alert('No se pudo aceptar el viaje: '+(error?.message||'Error desconocido'));
    }finally{
@@ -201,6 +222,32 @@ async function cargarViajes(){
    }
   });
   lista.appendChild(tarjeta);
+ });
+}
+async function cargarAsignados(){
+ if(!client||!currentDriver)return;
+ const driverId=currentDriver.id;
+ const box=el('detalleAsignado');
+ const {data,error}=await client.from('trips')
+  .select('id,origin_text,destination_text,status,driver_id')
+  .eq('driver_id',driverId)
+  .eq('status','accepted')
+  .order('created_at',{ascending:false})
+  .limit(5);
+ if(!currentDriver||currentDriver.id!==driverId)return;
+ box.replaceChildren();
+ if(error){appendText(box,'No se pudieron consultar tus viajes',error.message);return;}
+ if(!data?.length){box.textContent='No tienes viajes aceptados pendientes de inicio.';return;}
+ data.forEach(viaje=>{
+  const card=document.createElement('div');card.className='trip-card';
+  appendText(card,'Recogida',viaje.origin_text);
+  appendText(card,'Destino del pasajero',viaje.destination_text);
+  card.appendChild(makeButton('📍 IR A RECOGER PASAJERO',()=>openMap(viaje.origin_text)));
+  const dest=makeButton('🔒 NAVEGAR AL DESTINO (REQUIERE PIN)',()=>{},true);
+  card.appendChild(dest);
+  const note=document.createElement('p');note.className='message';
+  note.textContent='Por seguridad, la navegación al destino se activará tras la verificación del PIN de ambas partes en Supabase. Esta función aún no está implementada.';
+  card.appendChild(note);box.appendChild(card);
  });
 }
 initialize().catch(error=>showMessage('loginMessage','Error al iniciar: '+error.message));
