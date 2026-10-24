@@ -157,23 +157,16 @@ botonAceptar.onclick = async () => {
     return;
   }
 
-  const { data, error } = await client
-    .from('trips')
-    .update({
-      driver_id: user.id,
-      status: 'accepted'
-    })
-    .eq('id', viaje.id)
-    .eq('status', 'pending')
-    .is('driver_id', null)
-    .select('id');
+  const { data, error } = await client.rpc('accept_fast_trip', {
+  p_trip_id: viaje.id
+});
 
   if (error) {
     alert('No se pudo aceptar el viaje: ' + error.message);
     return;
   }
 
-  if (!data || data.length === 0) {
+  if (!data !== true) {
     alert('Este viaje ya fue tomado por otro conductor.');
     return;
   }
