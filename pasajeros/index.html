@@ -38,7 +38,7 @@ async function loadTrips(){
  const {data,error}=await client.from('trips').select('id,origin_text,destination_text,status,created_at').eq('passenger_id',currentUser.id).order('created_at',{ascending:false}).limit(15);
  if(error){box.textContent='No se pudo consultar el historial: '+error.message;return;}
  if(!data?.length){box.textContent='Todavía no tienes solicitudes.';return;}
- box.replaceChildren();for(const trip of data){const article=document.createElement('article');article.textContent='Origen: '+(trip.origin_text||'')+'\nDestino: '+(trip.destination_text||'')+'\nEstado: '+(trip.status==='pending'?'Pendiente de asignación':(trip.status||'Sin estado'));box.appendChild(article);}
+ box.replaceChildren();for(const trip of data){const article=document.createElement('article');article.textContent='Origen: '+(trip.origin_text||'')+'\nDestino: '+(trip.destination_text||'')+'\nEstado: '+(trip.status||'sin estado');box.appendChild(article);}
 }
 async function init(){
  if(!window.supabase){screen('access');setMessage('accessMessage','No se pudo cargar Supabase. Revisa tu conexión.');return;}
