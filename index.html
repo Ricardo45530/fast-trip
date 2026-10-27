@@ -1,35 +1,46 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#080808"><link rel="manifest" href="./manifest.webmanifest"><title>FAST TRIP Pasajeros</title><style>*{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}body{margin:0;min-height:100dvh;background:#080808;color:white;font:16px Arial,sans-serif}main{max-width:540px;margin:auto;padding:15px}.panel{background:#151515ee;border:1px solid #b99142;border-radius:15px;padding:18px;margin:16px 0}h1,h2{color:#e6be5d}input,select,textarea{width:100%;padding:12px;margin:7px 0 13px;background:#292929;color:white;border:1px solid #b99142;border-radius:8px;font-size:16px}input[type=checkbox]{width:auto}button,.btn{display:inline-block;background:linear-gradient(130deg,#ffe7a0,#c99a27);color:#16110a;border:0;border-radius:9px;padding:12px;margin:5px 3px;font-size:15px;font-weight:bold;text-decoration:none;cursor:pointer}button:disabled{opacity:.55}.hidden{display:none!important}.muted{color:#e6d6b4;font-size:13px;line-height:1.5}.card{border-top:1px solid #94712b;padding:12px 0;overflow-wrap:anywhere}p{overflow-wrap:anywhere}label{display:block}a{color:#ffdc7c}body{background:#080808 url('./logo%20pasajeros.jpeg') center top/cover fixed no-repeat}</style></head><body><main><header style="text-align:center"><h1>FAST TRIP</h1><p>PASAJEROS · LO HACEMOS DIFERENTE</p></header>
-<section id="access" class="panel"><h2>Acceso Pasajeros</h2><form id="loginForm"><label>Correo asociado a Supabase</label><input id="email" type="email" required autocomplete="email"><label>Contraseña</label><input id="password" type="password" required autocomplete="current-password"><label><input id="toggle" type="checkbox"> Mostrar contraseña</label><button>Iniciar sesión</button></form><button id="forgot" type="button">¿Olvidaste tu contraseña?</button><button id="registerLink" type="button">Registrarme como pasajero</button><p id="loginStatus" role="status"></p><p class="muted">El registro se inicia por WhatsApp; requiere verificación y aprobación administrativa. La recuperación usa el correo vinculado a Supabase.</p></section>
-<section id="register" class="panel hidden"><h2>Solicitar registro</h2><form id="registerForm"><label>Nombre completo</label><input name="name" required><label>Celular</label><input name="phone" type="tel" required><label>Correo</label><input name="mail" type="email" required><button>Enviar solicitud por WhatsApp</button></form><p id="registerStatus"></p><button id="backLogin">Volver al acceso</button></section>
-<section id="reset" class="panel hidden"><h2>Nueva contraseña</h2><form id="resetForm"><label>Nueva contraseña</label><input id="newpass" type="password" minlength="8" required><label>Confirmar contraseña</label><input id="confirm" type="password" minlength="8" required><button>Guardar contraseña</button></form><p id="resetStatus"></p></section>
-<section id="private" class="hidden"><div class="panel"><h2>Mi cuenta</h2><p id="hello"></p><div id="roleArea"></div><button id="logout">Cerrar sesión</button></div>
-<div class="panel"><h2>💬 Central FAST TRIP</h2><button id="waChat">Mensaje por WhatsApp</button><button id="waCall">Solicitar llamada por WhatsApp</button><p class="muted">La llamada se inicia manualmente dentro de WhatsApp. Central: 0963461706.</p></div>
-<div class="panel"><h2>💡 Sugerencias y reclamos</h2><form id="suggestionForm"><label>Tu mensaje</label><textarea id="suggestion" required minlength="5" rows="4"></textarea><button>Guardar en Administración</button></form><button id="waSuggestion">Enviar también por WhatsApp</button><p id="suggestionStatus" role="status"></p></div>
-<div class="panel"><h2>🚨 Seguridad</h2><button onclick="wa('URGENTE FAST TRIP. Necesito asistencia.')">Contactar Central</button><p class="muted">Esto no transmite GPS automáticamente. En una emergencia real llama al ECU 911.</p></div></section>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const ROLE='passenger';
-const SB_URL='https://ftiuzwwshcocvkvtdngm.supabase.co',SB_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE',CENTRAL='593963461706';
-const $=id=>document.getElementById(id);
-const sup=window.supabase?.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let profile=null,user=null,recovery=false;
-function show(id){for(const x of ['access','reset','private','register'])$(x)?.classList.toggle('hidden',x!==id);}
-function say(id,s){$(id).textContent=s;}
-function wa(s){window.open('https://wa.me/'+CENTRAL+'?text='+encodeURIComponent(s),'_blank','noopener,noreferrer');}
-function makeBtn(label,callback){let b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=callback;return b;}
-$('toggle').onchange=e=>$('password').type=e.target.checked?'text':'password';
-$('waChat').onclick=()=>wa('Hola Central FAST TRIP, necesito comunicarme con ustedes.');
-$('waCall').onclick=()=>wa('Hola Central FAST TRIP, solicito una llamada por WhatsApp.');
-$('waSuggestion').onclick=()=>wa('Sugerencia FAST TRIP: '+$('suggestion').value.trim());
-$('suggestionForm').onsubmit=async e=>{e.preventDefault();const message=$('suggestion').value.trim();if(message.length<5)return say('suggestionStatus','Escribe al menos 5 caracteres.');if(!sup||!user)return say('suggestionStatus','Inicia sesión para guardar la sugerencia.');const r=await sup.from('suggestions').insert({user_id:user.id,role:ROLE,message});if(r.error){say('suggestionStatus','No se guardó en Administración: '+r.error.message+' (requiere tabla y permisos). Puedes enviarla por WhatsApp.');return;}say('suggestionStatus','Sugerencia guardada. Puedes enviarla también por WhatsApp.');};
-$('forgot').onclick=async()=>{const email=$('email').value.trim();if(!email)return say('loginStatus','Escribe primero tu correo registrado.');const r=await sup.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});say('loginStatus',r.error?'Error: '+r.error.message:'Si existe la cuenta, recibirás un enlace para recuperar tu contraseña.');};
-$('resetForm').onsubmit=async e=>{e.preventDefault();if($('newpass').value!==$('confirm').value||$('newpass').value.length<8)return say('resetStatus','Las contraseñas deben coincidir y tener al menos 8 caracteres.');const r=await sup.auth.updateUser({password:$('newpass').value});if(r.error)return say('resetStatus',r.error.message);recovery=false;await sup.auth.signOut();history.replaceState({},'',location.pathname);show('access');say('loginStatus','Contraseña actualizada. Inicia sesión.');};
-$('loginForm').onsubmit=async e=>{e.preventDefault();if(!sup)return;const r=await sup.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error)return say('loginStatus',r.error.message);await check();};
-$('logout').onclick=async()=>{await sup.auth.signOut();profile=null;user=null;show('access');};
-$('registerLink').onclick=()=>show('register');$('backLogin').onclick=()=>show('access');
-$('registerForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const s='Hola Central FAST TRIP. Solicito registrarme como '+(ROLE==='driver'?'conductor':'pasajero')+'. Nombre: '+f.get('name')+'. Celular: '+f.get('phone')+'. Correo: '+f.get('mail')+'. Solicito instrucciones para el registro y aprobación.';wa(s);say('registerStatus','Se abrió WhatsApp. Envía el mensaje a Central. Esto NO crea una cuenta ni equivale a aprobación.');};
-async function check(){if(!sup)return;const r=await sup.auth.getUser();user=r.data?.user;if(!user){show('access');return;}const p=await sup.from('profiles').select('id,full_name,role,status,is_available').eq('id',user.id).maybeSingle();if(p.error||p.data?.role!==ROLE||p.data?.status!=='approved'){show('access');say('loginStatus','Se requiere perfil aprobado de '+ROLE+'.');return;}profile=p.data;show('private');$('hello').textContent='Bienvenido/a, '+(profile.full_name||'');await loadRole();}
-async function init(){if(!sup)return say('loginStatus','No se pudo cargar Supabase.');sup.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){recovery=true;show('reset');}if(event==='SIGNED_OUT')show('access');});const params=new URLSearchParams(location.hash.slice(1));if(params.get('type')==='recovery')recovery=true;const session=await sup.auth.getSession();if(recovery&&session.data.session){show('reset');return;}await check();}
-init().catch(e=>say('loginStatus',e.message));
-
-
-async function loadRole(){const a=$('roleArea');a.replaceChildren();const form=document.createElement('form');form.innerHTML='<h2>Solicitar viaje</h2><label>Origen</label><input name="origin" required maxlength="250"><label>Destino</label><input name="destination" required maxlength="250"><button>Enviar solicitud</button><p id="tripStatus"></p>';a.appendChild(form);const history=document.createElement('div');a.appendChild(history);async function load(){const r=await sup.from('trips').select('origin_text,destination_text,status,created_at').eq('passenger_id',user.id).order('created_at',{ascending:false}).limit(15);history.replaceChildren();if(r.error){history.textContent=r.error.message;return;}for(const t of r.data||[]){const d=document.createElement('div');d.className='card';d.textContent=t.origin_text+' → '+t.destination_text+' | '+t.status;history.appendChild(d);}}form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),origin=f.get('origin').trim(),destination=f.get('destination').trim();if(origin===destination)return $('tripStatus').textContent='Origen y destino deben ser diferentes.';const r=await sup.from('trips').insert({passenger_id:user.id,origin_text:origin,destination_text:destination,status:'pending'});$('tripStatus').textContent=r.error?r.error.message:'Solicitud enviada. Pendiente de aceptación por conductor.';if(!r.error){form.reset();await load();}};a.appendChild(makeBtn('Actualizar viajes',load));await load();}
-</script></body></html>
+/* FAST TRIP — complemento no destructivo para index.html principal.
+   Añadir como <script src="./FAST_TRIP_admin_complemento.js" defer></script>
+   justo antes de </body>. Requiere las variables globales client y verificarAdministrador
+   definidas en el index actual. La tabla public.suggestions y RLS deben existir. */
+(()=>{
+'use strict';
+const CENTRAL='593963461706';
+const link=(message)=>'https://wa.me/'+CENTRAL+'?text='+encodeURIComponent(message);
+const start=()=>{
+  document.querySelectorAll('a[href*="wa.me/593982831006"]').forEach(a=>{
+    a.href=link('Hola Central FAST TRIP. Deseo registrarme como conductor.');
+  });
+  const panel=document.getElementById('adminPanel');
+  if(!panel)return;
+  const section=document.createElement('section');
+  section.innerHTML=`<h3>📞 Central FAST TRIP</h3>
+  <p class="note">WhatsApp exclusivo: 0963461706. Las llamadas se inician dentro de WhatsApp.</p>
+  <a class="button" target="_blank" rel="noopener noreferrer" href="${link('Hola Central FAST TRIP, necesito comunicarme con ustedes.')}">💬 Mensaje a Central</a>
+  <a class="button" target="_blank" rel="noopener noreferrer" href="${link('Hola Central FAST TRIP, solicito una llamada por WhatsApp.')}">📞 Solicitar llamada</a>
+  <h3>💡 Sugerencias y reclamos</h3>
+  <button type="button" id="ftLoadSuggestions">Consultar sugerencias</button>
+  <div id="ftSuggestions" aria-live="polite"></div>`;
+  panel.insertBefore(section,document.getElementById('btnSalir'));
+  document.getElementById('ftLoadSuggestions').addEventListener('click',async()=>{
+    const box=document.getElementById('ftSuggestions');box.textContent='Consultando...';
+    try{
+      if(typeof verificarAdministrador!=='function'||!await verificarAdministrador())throw Error('Acceso administrativo no autorizado.');
+      if(typeof client==='undefined'||!client)throw Error('Primero inicia sesión.');
+      const {data,error}=await client.from('suggestions').select('id,user_id,role,message,status,created_at').order('created_at',{ascending:false}).limit(100);
+      if(error)throw error;
+      box.replaceChildren();if(!data?.length){box.textContent='No hay sugerencias registradas.';return;}
+      for(const item of data){
+        const div=document.createElement('div');div.className='entry';
+        const p=document.createElement('p');p.textContent=${item.role||'Usuario'} · ${item.created_at||''}\n${item.message||''}\nEstado: ${item.status||'pendiente'};div.appendChild(p);
+        const select=document.createElement('select');
+        ['pending','in_progress','resolved'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=({pending:'Pendiente',in_progress:'En proceso',resolved:'Resuelta'})[v];select.appendChild(o);});
+        select.value=item.status||'pending';
+        const b=document.createElement('button');b.type='button';b.textContent='Guardar estado';
+        b.onclick=async()=>{b.disabled=true;const r=await client.from('suggestions').update({status:select.value}).eq('id',item.id);alert(r.error?'No se pudo guardar: '+r.error.message:'Estado guardado');b.disabled=false;};
+        div.append(select,b);box.appendChild(div);
+      }
+    }catch(e){box.textContent='No disponible: '+e.message+'. Revisar tabla y políticas RLS en Supabase.';}
+  });
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
