@@ -89,6 +89,10 @@ async function loadTrips(){
  const article=document.createElement('article');
  article.textContent='Origen: '+(trip.origin_text||'')+'\nDestino: '+(trip.destination_text||'')+'\nEstado: '+(trip.status||'sin estado');
  if(trip.driver_id&&['accepted','arrived','in_progress'].includes(trip.status)){
+  const state=document.createElement('p');state.textContent=trip.status==='in_progress'?'🔴 CON PASAJERO · Tu recorrido está en curso.':'🟡 UNIDAD ASIGNADA · Consulta su ubicación antes de esperar.';article.append(state);
+ }
+
+ if(trip.driver_id&&['accepted','arrived','in_progress'].includes(trip.status)){
   const locate=document.createElement('button');locate.type='button';locate.textContent='Ver ubicación del conductor';
   locate.onclick=async()=>{
    locate.disabled=true;
