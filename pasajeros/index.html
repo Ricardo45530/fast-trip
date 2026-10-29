@@ -11,7 +11,7 @@
 <section class="bienvenida" id="welcome"><div style="width:100%;max-width:360px;text-align:center"><button class="boton" id="startBtn">Solicitar un viaje</button><p style="margin-top:20px;background:#080808dd;padding:12px;border-radius:12px"><a href="https://wa.me/593963461706?text=Hola%20Central%20FAST%20TRIP.%20Necesito%20informaci%C3%B3n%20sobre%20el%20registro%20de%20pasajeros." target="_blank" rel="noopener noreferrer" style="color:#f1d17c">Registrarme / Comunicar con Central</a></p><p><a href="https://ricardo45530.github.io/fast-trip/eliminar-cuenta.html" target="_blank" rel="noopener noreferrer" style="color:#f1d17c;background:#080808dd;padding:6px">Solicitar eliminación de cuenta</a></p></div></section>
 <section class="panel hidden" id="access"><h2>FAST TRIP Pasajeros</h2><p>Ingresa con la cuenta de pasajero aprobada por FAST TRIP.</p><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><label><input id="showPassword" type="checkbox" style="width:auto"> Mostrar contraseña</label><button type="submit" class="login-submit">INICIAR SESIÓN</button></form><div class="account-links"><button id="createBtn" class="text-link" type="button">Crear contraseña</button><button id="recoverBtn" class="text-link" type="button">Recuperar contraseña</button></div><p><a class="text-link" href="https://ricardo45530.github.io/fast-trip/eliminar-cuenta.html" target="_blank" rel="noopener noreferrer">Información sobre eliminación de cuenta</a></p><button id="backBtn" class="secondary" type="button">Volver</button><p id="accessMessage" class="message" role="status"></p><small>Si tu registro ya fue aprobado, puedes crear tu contraseña con el correo registrado. No necesitas volver a registrarte.</small></section>
 <section class="panel hidden" id="reset"><h2>Crear nueva contraseña</h2><form id="resetForm"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="8" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" required><button type="submit">Guardar contraseña</button></form><p id="resetMessage" class="message"></p></section>
-<section class="panel hidden" id="tripPanel"><h2>Solicitar viaje</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="parcelBtn" type="button">📦 Encomiendas</button><button id="teenBtn" type="button">🧑‍🎓 Adolescentes</button></div><p id="serviceInfo" role="status">Viaje normal.</p><div id="parcelDetails" class="hidden"><label for="parcelDescription">Descripción de encomienda</label><input id="parcelDescription" maxlength="180" placeholder="Contenido, tamaño y persona que recibe"><p>Tarifa: $2,50 primeros 2 km + $0,50/km adicional + $1,00 por encomienda. Carga +$1,50 si corresponde; peajes y recargos aplicables. Precio final pendiente de distancia validada.</p></div><div id="teenDetails" class="hidden"><label for="teenPhone">Teléfono del adolescente</label><input id="teenPhone" inputmode="tel" placeholder="09xxxxxxxx"><label for="guardianPhone">Teléfono del padre, madre o tutor</label><input id="guardianPhone" inputmode="tel" placeholder="09xxxxxxxx"><p>El tutor debe autorizar expresamente cada viaje mediante un proceso verificable. No se despachará antes de esa autorización.</p></div><p id="greeting"></p><form id="tripForm"><label for="origin">Origen (dirección de recogida)</label><input id="origin" maxlength="250" required placeholder="Ej. Urdesa, Guayaquil"><button type="button" id="useLocationBtn" class="secondary">Usar mi ubicación actual como origen</button><p id="locationMessage" class="message" role="status" aria-live="polite"></p><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="Ej. Mall del Sol, Guayaquil"><button type="submit" id="sendBtn">Enviar solicitud</button></form><p id="tripMessage" class="message" role="status"></p><div style="margin:18px 0;padding:14px;border:1px solid #bd9535;border-radius:12px;background:#111d"><h2>🚨 Ayuda y seguridad</h2><button id="emergencyBtn" type="button">Pedir asistencia a Central</button><p id="emergencyMessage" class="message" role="status" aria-live="polite"></p><small>Si autorizas tu ubicación, se añadirá al mensaje de WhatsApp. Debes enviarlo manualmente. Para emergencias reales llama al ECU 911.</small></div><h2>Mis solicitudes</h2><button id="refreshBtn" class="secondary" type="button">Actualizar estado</button><div id="tripHistory"></div><div class="account-links" aria-label="Ayuda y privacidad"><a class="text-link" href="https://wa.me/593963461706?text=Hola%2C%20soy%20pasajero%20de%20FAST%20TRIP%20y%20necesito%20ayuda" target="_blank" rel="noopener noreferrer">Comunicar con Central por WhatsApp</a><a class="text-link" href="https://wa.me/593963461706?text=Hola%2C%20quiero%20solicitar%20la%20eliminaci%C3%B3n%20de%20mi%20cuenta%20FAST%20TRIP%20Pasajeros" target="_blank" rel="noopener noreferrer">Solicitar eliminación de mi cuenta</a><small>La eliminación no es inmediata: Central verificará tu identidad, gestionará la solicitud e informará sobre los datos que deban conservarse por obligaciones legales.</small></div><button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button></section>
+<section class="panel hidden" id="tripPanel"><h2>Solicitar viaje</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="parcelBtn" type="button">📦 Encomiendas</button><button id="teenBtn" type="button">🧑‍🎓 Adolescentes</button></div><p id="serviceInfo" role="status">Viaje normal.</p><div id="parcelDetails" class="hidden"><label for="parcelDescription">Descripción de encomienda</label><input id="parcelDescription" maxlength="180" placeholder="Contenido, tamaño y persona que recibe"><p>Tarifa: $2,50 primeros 2 km + $0,50/km adicional + $1,00 por encomienda. Carga +$1,50 si corresponde; peajes y recargos aplicables. Precio final pendiente de distancia validada.</p></div><div id="teenDetails" class="hidden"><label for="teenPhone">Teléfono del adolescente</label><input id="teenPhone" inputmode="tel" placeholder="09xxxxxxxx"><label for="guardianPhone">Teléfono del padre, madre o tutor</label><input id="guardianPhone" inputmode="tel" placeholder="09xxxxxxxx"><p>El tutor debe autorizar expresamente cada viaje mediante un proceso verificable. No se despachará antes de esa autorización.</p></div><p id="greeting"></p><form id="tripForm"><label for="origin">Origen (dirección de recogida)</label><input id="origin" maxlength="250" required placeholder="Ej. Urdesa, Guayaquil"><button type="button" id="useLocationBtn" class="secondary">Usar mi ubicación actual como origen</button><p id="locationMessage" class="message" role="status" aria-live="polite"></p><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="Ej. Mall del Sol, Guayaquil"><button type="submit" id="sendBtn">Enviar solicitud</button></form><p id="tripMessage" class="message" role="status"></p><div style="margin:18px 0;padding:14px;border:1px solid #bd9535;border-radius:12px;background:#111d"><h2>🚨 Ayuda y seguridad</h2><button id="emergencyBtn" type="button">Pedir asistencia a Central</button><p id="emergencyMessage" class="message" role="status" aria-live="polite"></p><small>Si autorizas tu ubicación, se añadirá al mensaje de WhatsApp. Debes enviarlo manualmente. Para emergencias reales llama al ECU 911.</small></div><div class="panel" style="margin:12px 0"><h3>🎙️ Asistente de voz FAST TRIP</h3><label><input type="checkbox" id="voiceEnabled" checked> Activar mensajes hablados al iniciar y finalizar el viaje</label><p id="voiceStatus" role="status">La voz necesita audio habilitado en tu dispositivo.</p><button type="button" id="voiceTest">🔊 Probar voz</button></div><h2>Mis solicitudes</h2><button id="refreshBtn" class="secondary" type="button">Actualizar estado</button><div id="tripHistory"></div><div class="account-links" aria-label="Ayuda y privacidad"><a class="text-link" href="https://wa.me/593963461706?text=Hola%2C%20soy%20pasajero%20de%20FAST%20TRIP%20y%20necesito%20ayuda" target="_blank" rel="noopener noreferrer">Comunicar con Central por WhatsApp</a><a class="text-link" href="https://wa.me/593963461706?text=Hola%2C%20quiero%20solicitar%20la%20eliminaci%C3%B3n%20de%20mi%20cuenta%20FAST%20TRIP%20Pasajeros" target="_blank" rel="noopener noreferrer">Solicitar eliminación de mi cuenta</a><small>La eliminación no es inmediata: Central verificará tu identidad, gestionará la solicitud e informará sobre los datos que deban conservarse por obligaciones legales.</small></div><button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button></section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
@@ -30,8 +30,55 @@ async function checkPassenger(){
  if(!profile||profile.role!=='passenger'||profile.status!=='approved'){
   currentUser=null;screen('access');setMessage('accessMessage','Esta cuenta no tiene un perfil de pasajero aprobado. Consulta con Administración.');return;
  }
- currentUser=user;el('greeting').textContent='Bienvenido/a, '+(profile.full_name||'pasajero/a')+'.';screen('tripPanel');await loadTrips();
+ currentUser=user;el('greeting').textContent='Bienvenido/a, '+(profile.full_name||'pasajero/a')+'.';screen('tripPanel');await loadTrips();startVoiceMonitoring();
 }
+const voiceKey='fasttrip_voice_enabled';
+let voicePoll=null,voiceBusy=false;
+function speakFastTrip(message){
+ if(!('speechSynthesis' in window)){el('voiceStatus').textContent='Este dispositivo no admite voz en el navegador.';return;}
+ if(!el('voiceEnabled').checked)return;
+ const utterance=new SpeechSynthesisUtterance(message);
+ utterance.lang='es-EC';utterance.rate=0.92;utterance.pitch=1;
+ window.speechSynthesis.cancel();window.speechSynthesis.speak(utterance);
+}
+el('voiceEnabled').checked=localStorage.getItem(voiceKey)!=='false';
+el('voiceEnabled').onchange=()=>localStorage.setItem(voiceKey,String(el('voiceEnabled').checked));
+el('voiceTest').onclick=()=>speakFastTrip('Bienvenido a FAST TRIP. Lo hacemos diferente.');
+const voiceSeenKey='fasttrip_voice_seen_v1';
+function getVoiceSeen(){try{return JSON.parse(localStorage.getItem(voiceSeenKey)||'{}');}catch{return {};}}
+async function checkTripVoice(){
+ if(!currentUser||voiceBusy||!el('voiceEnabled').checked||document.hidden)return;
+ voiceBusy=true;
+ try{
+  const {data,error}=await client.from('trips').select('id,status,vehicle_id,service_type').eq('passenger_id',currentUser.id).order('created_at',{ascending:false}).limit(20);
+  if(error||!data)return;
+  const seen=getVoiceSeen();let changed=false;
+  for(const trip of [...data].reverse()){
+   if(trip.service_type==='encomienda')continue;
+   const status=String(trip.status||'').toLowerCase();
+   const started=status==='in_progress';
+   const finished=['completed','finished'].includes(status);
+   if(!started&&!finished)continue;
+   const key=trip.id+':'+(finished?'end':'start');
+   if(seen[key])continue;
+   // No reproducir viajes antiguos al instalar o iniciar sesión por primera vez.
+   if(!seen[trip.id+':initialized']){
+    seen[trip.id+':initialized']=true;seen[key]=true;changed=true;continue;
+   }
+   let unit='QRZ pendiente de confirmar';
+   if(started&&trip.vehicle_id){
+    const v=await client.from('vehicles').select('unit_number').eq('id',trip.vehicle_id).maybeSingle();
+    if(v.data?.unit_number)unit=v.data.unit_number;
+   }
+   const message=finished
+    ?'¡Gracias por viajar con FAST TRIP! Agradecemos tu calificación y que nos recomiendes con tus familiares y amigos. En tiempos difíciles, FAST TRIP te cuida. ¡Te esperamos pronto! FAST TRIP. ¡Lo hacemos diferente!'
+    :'¡Gracias por viajar con FAST TRIP! A partir de ahora te acompañaremos durante tu recorrido en la unidad '+unit+'. Recuerda que puedes compartir el seguimiento de tu viaje con un familiar o amigo de confianza. También cuentas con un botón para comunicarte con nuestros operadores por WhatsApp y un botón de pánico para situaciones de emergencia. Tu seguridad es nuestra prioridad. FAST TRIP. ¡Lo hacemos diferente!';
+   seen[key]=true;changed=true;speakFastTrip(message);
+  }
+  if(changed)localStorage.setItem(voiceSeenKey,JSON.stringify(seen));
+ }finally{voiceBusy=false;}
+}
+function startVoiceMonitoring(){if(voicePoll)clearInterval(voicePoll);void checkTripVoice();voicePoll=setInterval(()=>void checkTripVoice(),7000);}
 async function loadTrips(){
  if(!currentUser)return;
  const box=el('tripHistory');box.textContent='Consultando...';
@@ -62,7 +109,7 @@ async function loadTrips(){
 async function init(){
  if(!window.supabase){screen('access');setMessage('accessMessage','No se pudo cargar Supabase. Revisa tu conexión.');return;}
  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
- client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;screen('access');}});
+ client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;if(voicePoll){clearInterval(voicePoll);voicePoll=null;}window.speechSynthesis?.cancel();screen('access');}});
  const hash=new URLSearchParams(location.hash.slice(1));const query=new URLSearchParams(location.search);
  if(hash.get('type')==='recovery'||query.get('type')==='recovery')recovering=true;
  const {data:{session}}=await client.auth.getSession();
