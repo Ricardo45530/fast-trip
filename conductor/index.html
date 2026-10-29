@@ -122,7 +122,21 @@ if(!mine.error){
  box.prepend(state);
 }
 
-if(mine.error){const p=document.createElement('p');p.textContent='Error al consultar viajes asignados: '+mine.error.message;box.append(p);}else for(const t of mine.data||[]){const card=document.createElement('div');card.className='card';const p=document.createElement('p');p.textContent='Mi viaje ('+(t.status||'sin estado')+'): '+(t.origin_text||'')+' → '+(t.destination_text||'');card.append(p);card.append(makeBtn('Ir a recoger',()=>{if(!t.origin_text)return alert('No hay dirección de origen disponible.');const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.origin_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.origin_text);window.open(url,'_blank','noopener,noreferrer');}));if(t.status==='in_progress'&&t.destination_text){card.append(makeBtn('Navegar al destino',()=>{const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.destination_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.destination_text);window.open(url,'_blank','noopener,noreferrer');}));}const reminder=document.createElement('p');reminder.className='muted';reminder.textContent='Inicio y finalización requieren validación segura del PIN y estado del viaje en Supabase. No se permite simular el inicio desde esta pantalla.';card.append(reminder);box.append(card);}}catch(err){box.textContent='Error al consultar viajes: '+err.message;}finally{loadingTrips=false;}}
+if(mine.error){const p=document.createElement('p');p.textContent='Error al consultar viajes asignados: '+mine.error.message;box.append(p);}else for(const t of mine.data||[]){const card=document.createElement('div');card.className='card';const p=document.createElement('p');p.textContent='Mi viaje ('+(t.status||'sin estado')+'): '+(t.origin_text||'')+' → '+(t.destination_text||'');card.append(p);card.append(makeBtn('Ir a recoger',()=>{if(!t.origin_text)return alert('No hay dirección de origen disponible.');const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.origin_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.origin_text);window.open(url,'_blank','noopener,noreferrer');}));if(t.status==='in_progress'&&t.destination_text){card.append(makeBtn('Navegar al destino',()=>{const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.destination_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.destination_text);window.open(url,'_blank','noopener,noreferrer');}));}if(t.status==='in_progress'){
+ const {data:changes,error:ce}=await sup.from('trip_change_requests').select('id,change_type,requested_address,status').eq('trip_id',t.id).eq('status','pending').limit(1);
+ if(!ce)for(const change of changes||[]){
+  const notice=document.createElement('p');notice.textContent='🛑 Solicitud de '+(change.change_type==='add_stop'?'parada':'nuevo destino')+': '+change.requested_address;card.append(notice);
+  for(const decision of ['accepted','declined']){
+   card.append(makeBtn(decision==='accepted'?'Aceptar modificación':'Rechazar modificación',async()=>{
+    const {error}=await sup.from('trip_change_requests').update({status:decision,responded_at:new Date().toISOString()}).eq('id',change.id).eq('status','pending');
+    if(error)alert('No se pudo responder: '+error.message);
+    else alert(decision==='accepted'?'Solicitud aceptada. Debe calcularse y confirmar el ajuste de tarifa antes de cambiar la ruta.':'Solicitud rechazada. El pasajero será informado.');
+    await tripsAfterAction();
+   }));
+  }
+ }
+}
+const reminder=document.createElement('p');reminder.className='muted';reminder.textContent='Inicio y finalización requieren validación segura del PIN y estado del viaje en Supabase. No se permite simular el inicio desde esta pantalla.';card.append(reminder);box.append(card);}}catch(err){box.textContent='Error al consultar viajes: '+err.message;}finally{loadingTrips=false;}}
 async function tripsAfterAction(){await new Promise(resolve=>setTimeout(resolve,150));loadingTrips=false;await trips();}
 await trips();refreshTimer=setInterval(()=>{if(!document.hidden)trips();},12000);
 }
