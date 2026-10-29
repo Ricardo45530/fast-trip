@@ -65,7 +65,7 @@ async function requestPasswordLink(mode){
 el('createBtn').onclick=()=>void requestPasswordLink('create');
 el('recoverBtn').onclick=()=>void requestPasswordLink('recover');
 el('resetForm').onsubmit=async e=>{e.preventDefault();if(!client)return;const a=el('newPassword').value,b=el('confirmPassword').value;if(a.length<8||a!==b){setMessage('resetMessage','Las contraseñas deben coincidir y tener al menos 8 caracteres.');return;}const {error}=await client.auth.updateUser({password:a});if(error){setMessage('resetMessage',error.message);return;}await client.auth.signOut();recovering=false;history.replaceState({},'',location.pathname);screen('access');setMessage('accessMessage','Contraseña actualizada. Inicia sesión.');};
-el('tripForm').onsubmit=async e=>{e.preventDefault();if(!client||!currentUser)return;const origin=el('origin').value.trim(),destination=el('destination').value.trim();if(!origin||!destination||origin===destination){setMessage('tripMessage','Indica origen y destino diferentes.');return;}
+el('tripForm').onsubmit=async e=>{e.preventDefault();if(!client||!currentUser)return;const origin=el('origin').value.trim(),destination=el('destination').value.trim();if(!origin||!destination||origin.toLocaleLowerCase('es')===destination.toLocaleLowerCase('es')){setMessage('tripMessage','Indica origen y destino diferentes.');return;}
  const btn=el('sendBtn');btn.disabled=true;setMessage('tripMessage','Enviando solicitud...');
  try{await checkPassenger();if(!currentUser){setMessage('accessMessage','Tu cuenta debe estar aprobada.');return;}
  // El servidor debe imponer el pasajero autenticado, el estado pendiente y los permisos RLS.
