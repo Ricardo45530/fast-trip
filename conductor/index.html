@@ -32,6 +32,13 @@ function startGps(){
   try{
    const result=await sup.from('driver_locations').upsert({driver_id:user.id,latitude,longitude,is_available:true,updated_at:new Date().toISOString()},{onConflict:'driver_id'});
    if(result.error)console.warn('No se pudo actualizar GPS:',result.error.message);
+   else{
+    const active=await sup.from('trips').select('id').eq('driver_id',user.id).in('status',['accepted','arrived','in_progress']).limit(1);
+    if(!active.error&&active.data?.length){
+     const saved=await sup.from('trip_gps_history').insert({trip_id:active.data[0].id,driver_id:user.id,latitude,longitude,accuracy_m:accuracy});
+     if(saved.error)console.warn('No se pudo guardar el recorrido:',saved.error.message);
+    }
+   }
   }finally{gpsSaving=false;}
  },err=>console.warn('Permiso GPS o ubicación no disponible:',err.message),{enableHighAccuracy:true,maximumAge:10000,timeout:20000});
 }
