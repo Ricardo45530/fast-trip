@@ -1,0 +1,16 @@
+name: Validación web FAST TRIP
+on:
+  push:
+    branches: [main, preparacion-android-2026-10-28]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revisar JavaScript y manifiestos
+        run: node scripts/validate-web.mjs
