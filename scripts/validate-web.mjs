@@ -5,7 +5,7 @@ for(const app of apps){
   const htmlPath=`${app}/index.html`,manifestPath=`${app}/manifest.webmanifest`;
   if(!existsSync(htmlPath)){console.error('Falta '+htmlPath);failures++;continue;}
   const html=readFileSync(htmlPath,'utf8');
-  const scripts=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());
+  const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());
   if(!scripts.length){console.error('No hay JavaScript inline en '+htmlPath);failures++;}
   for(const [i,js] of scripts.entries()){try{new Script(js,{filename:htmlPath+'#script'+(i+1)});}catch(e){console.error('Error JS en '+htmlPath+': '+e.message);failures++;}}
   if(!existsSync(manifestPath)){console.error('Falta '+manifestPath);failures++;continue;}
