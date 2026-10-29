@@ -87,4 +87,30 @@ $('recoveryForm').onsubmit=async e=>{e.preventDefault();const a=$('newPassword')
 await client.auth.getSession();await updateAccess();poller=setInterval(async()=>{try{if(await admin()){if(activeSection==='cancelaciones')await renderCancellations(true);else{const {data,error}=await client.from('trip_cancellation_requests').select('id').eq('status','pending').limit(100);if(!error){const fresh=(data||[]).some(r=>!previousPending.has(r.id));if(fresh)beep();previousPending=new Set((data||[]).map(r=>r.id));}}}}catch(e){console.warn('Avisos:',e.message);}},20000);
 }
 init().catch(e=>say('loginMessage','Error de inicio: '+errorText(e)));
-</script><script src="./FAST_TRIP_admin_complemento.js" defer></script></body></html>
+</script><script src="./FAST_TRIP_admin_complemento.js" defer></script><aside id="gpsAdminPanel" style="max-width:900px;margin:24px auto;padding:20px;background:#151515;color:#f5f0e5;border:1px solid #947438;border-radius:12px"><h2>GPS · Conductores conectados</h2><button id="gpsAdminRefresh" type="button">Actualizar ubicaciones</button><p id="gpsAdminStatus" role="status">Inicia sesión como administrador para consultar.</p><div id="gpsAdminList"></div></aside>
+<script>
+(function(){
+ const button=document.getElementById('gpsAdminRefresh'),status=document.getElementById('gpsAdminStatus'),box=document.getElementById('gpsAdminList');
+ button.addEventListener('click',async()=>{
+  const sb=window.supabase;
+  if(!sb){status.textContent='No está disponible la biblioteca de conexión.';return;}
+  const client=sb.createClient('https://ftiuzwwshcocvkvtdngm.supabase.co','sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE');
+  button.disabled=true;status.textContent='Consultando ubicaciones autorizadas...';
+  try{
+   const {data,error}=await client.from('driver_locations').select('driver_id,latitude,longitude,updated_at').eq('is_available',true).order('updated_at',{ascending:false}).limit(100);
+   if(error)throw error;
+   box.replaceChildren();
+   const fresh=(data||[]).filter(x=>Date.now()-new Date(x.updated_at).getTime()<120000);
+   status.textContent=fresh.length+' conductor(es) con ubicación reciente. Solo cuentas administrativas autorizadas pueden consultar.';
+   for(const x of fresh){
+    const p=document.createElement('p'),a=document.createElement('a');
+    a.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.latitude+','+x.longitude);
+    a.target='_blank';a.rel='noopener noreferrer';a.textContent='Ver ubicación GPS';
+    p.textContent='Conductor '+x.driver_id.slice(0,8)+' · Actualizado: '+new Date(x.updated_at).toLocaleTimeString('es-EC')+' · ';
+    p.append(a);box.append(p);
+   }
+  }catch(e){status.textContent='No se pudo consultar GPS: '+e.message;}
+  finally{button.disabled=false;}
+ });
+})();
+</script></body></html>
