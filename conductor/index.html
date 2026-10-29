@@ -27,7 +27,7 @@ $('waCall').onclick=()=>wa('Hola Central FAST TRIP, solicito una llamada por Wha
 $('waSuggestion').onclick=()=>{const s=$('suggestion').value.trim();if(s.length<5)return say('suggestionStatus','Escribe al menos 5 caracteres.');wa('Sugerencia FAST TRIP: '+s);};
 $('emergency').onclick=()=>{
  const btn=$('emergency');btn.disabled=true;
- const emergencyText='URGENTE FAST TRIP. Necesito asistencia. Mi cuenta de conductor: '+(user?.id||'sin sesión')+'.';
+ const emergencyText='URGENTE FAST TRIP. Necesito asistencia. Soy conductor y solicito contacto inmediato de Central.';
  if(!navigator.geolocation){
   wa(emergencyText+' No fue posible obtener coordenadas. En una emergencia llama al ECU 911.');
   btn.disabled=false;return;
