@@ -108,8 +108,18 @@ async function loadTrips(){
   article.appendChild(locate);
  }
  if(trip.status==='in_progress'&&trip.driver_id){
+  const {data:nextReservations,error:reservationError}=await client.from('next_trip_reservations').select('id,status').eq('current_trip_id',trip.id).in('status',['confirmed','activated']).limit(1);
+  const hasNextReservation=!!nextReservations?.length;
   const stop=document.createElement('button');stop.type='button';stop.textContent='➕ Agregar parada / Cambiar destino';
+  stop.disabled=hasNextReservation||!!reservationError;
+  if(hasNextReservation||reservationError){
+   const warning=document.createElement('p');
+   warning.textContent=hasNextReservation?'🔒 No puedes agregar paradas ni modificar tu destino porque esta unidad tiene un próximo servicio confirmado.':'No se pudo verificar si existe un próximo servicio confirmado. Intenta actualizar el viaje.';
+   article.append(warning);
+  }
   stop.onclick=async()=>{
+   const {data:check,error:checkError}=await client.from('next_trip_reservations').select('id').eq('current_trip_id',trip.id).in('status',['confirmed','activated']).limit(1);
+   if(checkError||check?.length)return alert(checkError?'No se pudo verificar la disponibilidad de cambios.':'No puedes modificar este viaje: hay un próximo servicio confirmado.');
    const kind=window.prompt('Escribe 1 para agregar parada o 2 para cambiar destino:','1');
    if(!['1','2'].includes(kind))return;
    const address=window.prompt('Dirección exacta de la nueva parada o destino:','');
