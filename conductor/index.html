@@ -15,12 +15,27 @@
 'use strict';
 const ROLE='driver',SB_URL='https://ftiuzwwshcocvkvtdngm.supabase.co',SB_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE',CENTRAL='593963461706';
 const $=id=>document.getElementById(id);const sup=window.supabase?.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let profile=null,user=null,recovery=false,refreshTimer=null,loadingTrips=false;
+let profile=null,user=null,recovery=false,refreshTimer=null,loadingTrips=false,gpsWatchId=null,gpsSaving=false;
 function show(id){for(const x of ['access','reset','private','register'])$(x).classList.toggle('hidden',x!==id);if(id!=='private')stopPolling();}
 function say(id,s){$(id).textContent=s;}
 function wa(s){window.open('https://wa.me/'+CENTRAL+'?text='+encodeURIComponent(s),'_blank','noopener,noreferrer');}
 function makeBtn(label,callback){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=callback;return b;}
-function stopPolling(){if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}}
+function stopGps(){if(gpsWatchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}}
+function startGps(){
+ stopGps();
+ if(!user||!profile?.is_available||!navigator.geolocation)return;
+ gpsWatchId=navigator.geolocation.watchPosition(async position=>{
+  if(gpsSaving||!user||!profile?.is_available)return;
+  const {latitude,longitude,accuracy}=position.coords;
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||accuracy>150)return;
+  gpsSaving=true;
+  try{
+   const result=await sup.from('driver_locations').upsert({driver_id:user.id,latitude,longitude,is_available:true,updated_at:new Date().toISOString()},{onConflict:'driver_id'});
+   if(result.error)console.warn('No se pudo actualizar GPS:',result.error.message);
+  }finally{gpsSaving=false;}
+ },err=>console.warn('Permiso GPS o ubicación no disponible:',err.message),{enableHighAccuracy:true,maximumAge:10000,timeout:20000});
+}
+function stopPolling(){if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}stopGps();}
 $('toggle').onchange=e=>$('password').type=e.target.checked?'text':'password';
 $('waChat').onclick=()=>wa('Hola Central FAST TRIP, necesito comunicarme con ustedes.');
 $('waCall').onclick=()=>wa('Hola Central FAST TRIP, solicito una llamada por WhatsApp.');
@@ -54,8 +69,8 @@ $('registerLink').onclick=()=>show('register');$('backLogin').onclick=()=>show('
 $('registerForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);wa('Hola Central FAST TRIP. Solicito registrarme como conductor. Nombre: '+f.get('name')+'. Celular: '+f.get('phone')+'. Correo: '+(f.get('mail')||'No proporcionado')+'. Placa: '+(f.get('plate')||'Pendiente')+'. Solicito instrucciones para registro y aprobación.');say('registerStatus','Se abrió WhatsApp. Envía el mensaje a Central. Esto no crea una cuenta ni equivale a aprobación.');};
 async function check(){if(!sup)return;const r=await sup.auth.getUser();user=r.data?.user;if(!user){show('access');return;}const p=await sup.from('profiles').select('id,full_name,role,status,is_available').eq('id',user.id).maybeSingle();if(p.error||p.data?.role!==ROLE||p.data?.status!=='approved'){show('access');say('loginStatus',p.error?'Error al verificar perfil: '+p.error.message:'Se requiere un perfil de conductor aprobado.');return;}profile=p.data;show('private');$('hello').textContent='Bienvenido/a, '+(profile.full_name||'');await loadRole();}
 async function init(){if(!sup)return say('loginStatus','No se pudo cargar Supabase.');sup.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovery=true;show('reset');}if(event==='SIGNED_OUT'){stopPolling();show('access');}});if(new URLSearchParams(location.hash.slice(1)).get('type')==='recovery')recovery=true;const session=await sup.auth.getSession();if(recovery&&session.data.session){show('reset');return;}await check();}
-async function loadRole(){stopPolling();const a=$('roleArea');a.replaceChildren();const state=document.createElement('p'),feedback=document.createElement('p');feedback.className='muted';a.append(state,feedback);const connect=makeBtn('🟢 CONECTARSE',()=>update(true)),disconnect=makeBtn('🔴 DESCONECTARSE',()=>update(false));a.append(connect,disconnect);function render(){state.textContent='Estado: '+(profile.is_available?'Conectado':'Desconectado');connect.disabled=!!profile.is_available;disconnect.disabled=!profile.is_available;}
-async function update(value){connect.disabled=disconnect.disabled=true;feedback.textContent='Actualizando disponibilidad…';let r;try{r=await sup.rpc('set_driver_availability',{p_available:value});}catch(e){feedback.textContent='Error de conexión: '+e.message;render();return;}if(r.error||r.data!==true){feedback.textContent=r.error?.message||'No se autorizó el cambio';render();return;}profile.is_available=value;feedback.textContent='Disponibilidad actualizada correctamente.';render();await trips();}render();
+async function loadRole(){stopPolling();if(profile?.is_available)startGps();const a=$('roleArea');a.replaceChildren();const state=document.createElement('p'),feedback=document.createElement('p');feedback.className='muted';a.append(state,feedback);const connect=makeBtn('🟢 CONECTARSE',()=>update(true)),disconnect=makeBtn('🔴 DESCONECTARSE',()=>update(false));a.append(connect,disconnect);function render(){state.textContent='Estado: '+(profile.is_available?'Conectado':'Desconectado');connect.disabled=!!profile.is_available;disconnect.disabled=!profile.is_available;}
+async function update(value){connect.disabled=disconnect.disabled=true;feedback.textContent='Actualizando disponibilidad…';let r;try{r=await sup.rpc('set_driver_availability',{p_available:value});}catch(e){feedback.textContent='Error de conexión: '+e.message;render();return;}if(r.error||r.data!==true){feedback.textContent=r.error?.message||'No se autorizó el cambio';render();return;}profile.is_available=value;if(value)startGps();else stopGps();feedback.textContent='Disponibilidad actualizada correctamente.';render();await trips();}render();
 const navLabel=document.createElement('label');navLabel.textContent='Navegación preferida';const nav=document.createElement('select');nav.innerHTML='<option value="google">Google Maps</option><option value="waze">Waze</option>';nav.value=localStorage.getItem('ft_nav')==='waze'?'waze':'google';nav.onchange=()=>localStorage.setItem('ft_nav',nav.value);a.append(navLabel,nav);
 const note=document.createElement('p');note.className='muted';note.textContent='La asignación por GPS, el PIN de abordaje, la activación de dispositivos y los cobros automáticos necesitan funciones seguras en Supabase. Esta versión no afirma que ya estén activos.';a.append(note);
 const box=document.createElement('div');a.append(box);
