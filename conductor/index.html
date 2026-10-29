@@ -92,8 +92,8 @@ const driverVoiceSeen=new Set();
 function speakDriverStart(){
  if(!driverVoiceEnabled||!('speechSynthesis' in window))return;
  const name=String(profile?.full_name||'Conductor').trim().split(/\s+/)[0];
- const u=new SpeechSynthesisUtterance(name+', por favor, bloquea las puertas del vehículo. Revisa que la temperatura sea agradable para tus pasajeros y mantén el volumen de la radio en un nivel cálido y cómodo. Gracias por cuidar a quienes viajan con FAST TRIP.');
- u.lang='es-EC';u.rate=0.92;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+ const u=new SpeechSynthesisUtterance(name+', por favor, bloquea las puertas del vehículo. Revisa que la temperatura sea agradable para tus pasajeros y mantén el volumen de la radio en un nivel cálido y cómodo. Antes de iniciar la marcha, verifica que todos los pasajeros lleven correctamente colocado el cinturón de seguridad, tanto adelante como atrás. Gracias por cuidar a quienes viajan con FAST TRIP.');
+ u.lang='es-EC';u.rate=0.92;if(!window.speechSynthesis.speaking)window.speechSynthesis.speak(u);
 }
 function setupDriverVoice(area){
  const panel=document.createElement('div');panel.className='card';
