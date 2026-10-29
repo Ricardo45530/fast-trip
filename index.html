@@ -12,7 +12,7 @@
 <div id="section-pasajeros" class="panel hidden"><h3>Pasajeros</h3><div id="listaPasajeros"></div></div>
 <div id="section-conductores" class="panel hidden"><h3>Conductores</h3><p class="note">La aprobación del perfil no sustituye la validación de pagos, documentos, selfie ni vehículo.</p><div id="listaConductores"></div></div>
 <div id="section-vehiculos" class="panel hidden"><h3>Vehículos</h3><p class="note">Solo año modelo 2022 en adelante, matrícula vigente, inspección aprobada y autorización del propietario cuando corresponda.</p><div id="listaVehiculos"></div></div>
-<div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
+<div class="panel" id="adminVoicePanel"><h3>🎙️ Avisos de voz de unidades QRZ</h3><label><input type="checkbox" id="adminVoiceEnabled"> Activar avisos hablados al iniciar y finalizar viajes</label><button type="button" id="adminVoiceTest">🔊 Probar voz</button><p id="adminVoiceStatus" role="status">Activa la voz y deja abierto el panel de Administración.</p></div><div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
 <div id="section-encomiendas" class="panel hidden"><h3>📦 Encomiendas</h3><p>Tarifa base: $2,50 hasta 2 km; $0,50 por km adicional; suplemento encomienda $1,00. Carga +$1,50 cuando corresponda, más peajes y recargos aplicables.</p><button type="button" id="refreshParcels">Actualizar encomiendas</button><div id="parcelList"></div></div>
 <div id="section-adolescentes" class="panel hidden"><h3>🧑‍🎓 Traslados adolescentes</h3><p>Supervisión únicamente: el tutor legal autoriza cada viaje mediante verificación independiente. Administración no sustituye esa autorización. Solicitudes pendientes NO deben despacharse.</p><button type="button" id="refreshTeens">Consultar solicitudes</button><div id="teenList"></div></div>
 <div id="section-documentos" class="panel hidden"><h3>Documentos por revisar</h3><p class="note">Avisar 15 días antes del vencimiento; bloquear al día siguiente del vencimiento si no existe renovación verificada. El bloqueo real debe ejecutarse en Supabase.</p><div id="listaDocumentos"></div></div>
@@ -77,10 +77,60 @@ async function updateSuggestion(id,status){await requireAdmin();const {data,erro
 const renderers={sugerencias:renderSuggestions,pasajeros:()=>renderProfiles('passenger'),conductores:()=>renderProfiles('driver'),vehiculos:renderVehicles,reservas:renderTrips,documentos:renderDocuments,pagos:renderPayments,mensajes:async()=>{},cancelaciones:()=>renderCancellations(),seguridad:renderSecurity};
 async function section(name){if(!(await admin())){say('adminMessage','Acceso no autorizado.');return;}for(const s of Object.keys(renderers))hide('section-'+s);show('section-'+name);activeSection=name;await renderers[name]();}
 function showAvailability(available){say('driverStatus','Estado: '+(available?'Conectado':'Desconectado'));$('btnConectar').disabled=available;$('btnDesconectar').disabled=!available;}
-async function updateAccess(){if(recoveryMode||!client)return;hide('adminPanel');hide('driverPanel');const u=await user();if(!u){show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){show('adminPanel');if(!activeSection)await section('seguridad');}else if(p.role==='driver'){show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
+let adminVoiceTimer=null,adminVoiceBusy=false,adminVoicePrimed=false;
+const adminVoiceLast=new Map();
+function adminSay(message){
+ if(!('speechSynthesis' in window)){document.getElementById('adminVoiceStatus').textContent='Este navegador no admite voz.';return;}
+ if(!document.getElementById('adminVoiceEnabled').checked)return;
+ const u=new SpeechSynthesisUtterance(message);u.lang='es-EC';u.rate=0.92;
+ window.speechSynthesis.speak(u);
+}
+async function adminVoiceCheck(){
+ if(adminVoiceBusy||!client||!document.getElementById('adminVoiceEnabled').checked||document.hidden)return;
+ adminVoiceBusy=true;
+ try{
+  if(!(await admin()))return;
+  const {data:trips,error}=await client.from('trips').select('id,status,vehicle_id').order('created_at',{ascending:false}).limit(100);
+  if(error)throw error;
+  const ids=[...new Set((trips||[]).filter(t=>t.vehicle_id).map(t=>t.vehicle_id))];
+  const units=new Map();
+  if(ids.length){
+   const {data:vehicles,error:ve}=await client.from('vehicles').select('id,unit_number').in('id',ids);
+   if(ve)throw ve;
+   for(const v of vehicles||[])units.set(v.id,v.unit_number);
+  }
+  for(const t of trips||[]){
+   const old=adminVoiceLast.get(t.id);
+   adminVoiceLast.set(t.id,t.status);
+   if(!adminVoicePrimed||old===undefined||old===t.status)continue;
+   const unit=units.get(t.vehicle_id)||'QRZ sin asignar';
+   if(t.status==='in_progress')adminSay('La unidad '+unit+' ha iniciado su viaje.');
+   if(['completed','finished'].includes(t.status))adminSay('La unidad '+unit+' ha finalizado su viaje.');
+  }
+  adminVoicePrimed=true;
+  document.getElementById('adminVoiceStatus').textContent='Avisos activos. Supervisando cambios de estado cada 7 segundos.';
+ }catch(e){document.getElementById('adminVoiceStatus').textContent='Avisos: '+(e.message||'No disponible');}
+ finally{adminVoiceBusy=false;}
+}
+function startAdminVoice(){
+ if(adminVoiceTimer)clearInterval(adminVoiceTimer);
+ adminVoicePrimed=false;adminVoiceLast.clear();
+ void adminVoiceCheck();adminVoiceTimer=setInterval(()=>void adminVoiceCheck(),7000);
+}
+function stopAdminVoice(){
+ if(adminVoiceTimer)clearInterval(adminVoiceTimer);
+ adminVoiceTimer=null;adminVoicePrimed=false;adminVoiceLast.clear();
+ window.speechSynthesis?.cancel();
+}
+async function updateAccess(){if(recoveryMode||!client)return;hide('adminPanel');hide('driverPanel');const u=await user();if(!u){stopAdminVoice();show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){show('adminPanel');startAdminVoice();if(!activeSection)await section('seguridad');}else if(p.role==='driver'){stopAdminVoice();show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
 async function availability(value){if(!client)return;say('driverMessage','Actualizando...');$('btnConectar').disabled=true;$('btnDesconectar').disabled=true;try{const {data,error}=await client.rpc('set_driver_availability',{p_available:value});if(error)throw error;if(data!==true)throw new Error('No autorizado por servidor.');const u=await user();const {data:p,error:pe}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(pe||p?.role!=='driver'||p.status!=='approved')throw new Error('Perfil no habilitado.');showAvailability(p.is_available===true);say('driverMessage',p.is_available===value?'Disponibilidad actualizada.':'No se confirmó el cambio.');}catch(e){say('driverMessage',errorText(e));await updateAccess();}}
-async function signout(){if(client){const {error}=await client.auth.signOut();if(error){alert(error.message);return;}}clearInterval(poller);poller=null;hide('adminPanel');hide('driverPanel');show('authPanel');say('loginMessage','Sesión cerrada.');}
-async function init(){setupWhatsApp();document.querySelectorAll('.toggle-password').forEach(b=>b.addEventListener('click',()=>{const x=$(b.dataset.target);x.type=x.type==='password'?'text':'password';b.textContent=x.type==='password'?'👁️ Ver':'🙈 Ocultar';}));document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>section(b.dataset.section).catch(e=>say('adminMessage',errorText(e)))));$('btnSalir').onclick=signout;$('btnSalirConductor').onclick=signout;$('btnConectar').onclick=()=>availability(true);$('btnDesconectar').onclick=()=>availability(false);$('refreshSecurity').onclick=renderSecurity;$('enableSound').onclick=async()=>{soundEnabled=true;soundMuted=false;beep();};$('silenceSound').onclick=()=>{soundMuted=true;};
+async function signout(){stopAdminVoice();if(client){const {error}=await client.auth.signOut();if(error){alert(error.message);return;}}clearInterval(poller);poller=null;hide('adminPanel');hide('driverPanel');show('authPanel');say('loginMessage','Sesión cerrada.');}
+async function init(){setupWhatsApp();
+const voiceToggle=document.getElementById('adminVoiceEnabled');
+voiceToggle.checked=localStorage.getItem('fasttrip_admin_voice_enabled')==='true';
+voiceToggle.onchange=()=>{localStorage.setItem('fasttrip_admin_voice_enabled',String(voiceToggle.checked));if(voiceToggle.checked)startAdminVoice();else stopAdminVoice();};
+document.getElementById('adminVoiceTest').onclick=()=>adminSay('La unidad QRZ cero cero uno ha iniciado su viaje. La unidad QRZ cero cero uno ha finalizado su viaje.');
+document.querySelectorAll('.toggle-password').forEach(b=>b.addEventListener('click',()=>{const x=$(b.dataset.target);x.type=x.type==='password'?'text':'password';b.textContent=x.type==='password'?'👁️ Ver':'🙈 Ocultar';}));document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>section(b.dataset.section).catch(e=>say('adminMessage',errorText(e)))));$('btnSalir').onclick=signout;$('btnSalirConductor').onclick=signout;$('btnConectar').onclick=()=>availability(true);$('btnDesconectar').onclick=()=>availability(false);$('refreshSecurity').onclick=renderSecurity;$('enableSound').onclick=async()=>{soundEnabled=true;soundMuted=false;beep();};$('silenceSound').onclick=()=>{soundMuted=true;};
 if(!window.supabase){say('loginMessage','No se pudo cargar Supabase.');return;}client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
 client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;hide('authPanel');hide('adminPanel');hide('driverPanel');show('recoveryPanel');}if(['SIGNED_IN','INITIAL_SESSION','TOKEN_REFRESHED'].includes(event))setTimeout(()=>updateAccess().catch(console.error),0);if(event==='SIGNED_OUT'){hide('adminPanel');hide('driverPanel');show('authPanel');}});
 $('loginForm').onsubmit=async e=>{e.preventDefault();say('loginMessage','Verificando...');try{const {error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});if(error)throw error;$('loginPassword').value='';await updateAccess();}catch(e){say('loginMessage','No se pudo iniciar sesión. Comprueba tus credenciales.');}};
