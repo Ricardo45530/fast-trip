@@ -84,8 +84,38 @@ const parcelButton=makeBtn('📦 Encomiendas',()=>{alert('Encomiendas: primeros 
 const teenButton=makeBtn('🧑‍🎓 Adolescentes',()=>{alert('Traslados de adolescentes: solo pueden despacharse después de autorización verificable del padre, madre o tutor para ese viaje. No aceptes solicitudes sin autorización.');});
 serviceActions.append(parcelButton,teenButton);a.append(serviceActions);
 const note=document.createElement('p');note.className='muted';note.textContent='La asignación por GPS, el PIN de abordaje, la activación de dispositivos y los cobros automáticos necesitan funciones seguras en Supabase. Esta versión no afirma que ya estén activos.';a.append(note);
+setupDriverVoice(a);
 const box=document.createElement('div');a.append(box);
+const driverVoiceKey='fasttrip_driver_voice_enabled';
+let driverVoiceEnabled=localStorage.getItem(driverVoiceKey)!=='false';
+const driverVoiceSeen=new Set();
+function speakDriverStart(){
+ if(!driverVoiceEnabled||!('speechSynthesis' in window))return;
+ const name=String(profile?.full_name||'Conductor').trim().split(/\s+/)[0];
+ const u=new SpeechSynthesisUtterance(name+', por favor, bloquea las puertas del vehículo. Revisa que la temperatura sea agradable para tus pasajeros y mantén el volumen de la radio en un nivel cálido y cómodo. Gracias por cuidar a quienes viajan con FAST TRIP.');
+ u.lang='es-EC';u.rate=0.92;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+}
+function setupDriverVoice(area){
+ const panel=document.createElement('div');panel.className='card';
+ const title=document.createElement('p');title.textContent='🎙️ Asistente de voz al iniciar viaje';
+ const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=driverVoiceEnabled;
+ const label=document.createElement('label');label.append(toggle,document.createTextNode(' Activar voz'));
+ toggle.onchange=()=>{driverVoiceEnabled=toggle.checked;localStorage.setItem(driverVoiceKey,String(toggle.checked));};
+ panel.append(title,label,makeBtn('🔊 Probar voz',speakDriverStart));area.append(panel);
+}
+function checkDriverVoice(rows){
+ for(const t of rows||[]){
+  if(t.status!=='in_progress'||driverVoiceSeen.has(t.id))continue;
+  driverVoiceSeen.add(t.id);
+  // Evitar anunciar viajes antiguos al abrir la aplicación.
+  if(!driverVoiceInitialized)continue;
+  speakDriverStart();
+ }
+ driverVoiceInitialized=true;
+}
+let driverVoiceInitialized=false;
 async function trips(){if(loadingTrips||!user||$('private').classList.contains('hidden'))return;loadingTrips=true;try{const pending=profile.is_available?await sup.from('trips').select('id,origin_text,destination_text,status,driver_id,service_type').eq('status','pending').is('driver_id',null).limit(10):null;const mine=await sup.from('trips').select('id,origin_text,destination_text,status').eq('driver_id',user.id).in('status',['accepted','arrived','in_progress']).limit(10);box.replaceChildren();if(!profile.is_available){const p=document.createElement('p');p.textContent='Conéctate para recibir nuevos viajes.';box.append(p);}else if(pending.error){const p=document.createElement('p');p.textContent='No se pudieron consultar viajes: '+pending.error.message;box.append(p);}else if(!(pending.data||[]).length){const p=document.createElement('p');p.textContent='No hay solicitudes pendientes.';box.append(p);}else for(const t of pending.data){const card=document.createElement('div');card.className='card';const label=document.createElement('p');label.textContent=(t.service_type==='encomienda'?'📦 ENCOMIENDA · ':'🚘 VIAJE · ')+(t.origin_text||'Origen sin especificar')+' → '+(t.destination_text||'Destino sin especificar');card.append(label);const accept=makeBtn('Aceptar viaje',async()=>{accept.disabled=true;try{const x=await sup.rpc('accept_fast_trip',{p_trip_id:t.id});if(x.error){alert('No se pudo aceptar: '+x.error.message);}else if(x.data===true){alert('Viaje aceptado. Consulta tu servicio asignado debajo.');}else{alert('Este viaje ya fue asignado o no está disponible.');}}catch(e){alert('Error de conexión: '+e.message);}finally{await tripsAfterAction();}});card.append(accept);box.append(card);}
+if(!mine.error)checkDriverVoice(mine.data);
 if(mine.error){const p=document.createElement('p');p.textContent='Error al consultar viajes asignados: '+mine.error.message;box.append(p);}else for(const t of mine.data||[]){const card=document.createElement('div');card.className='card';const p=document.createElement('p');p.textContent='Mi viaje ('+(t.status||'sin estado')+'): '+(t.origin_text||'')+' → '+(t.destination_text||'');card.append(p);card.append(makeBtn('Ir a recoger',()=>{if(!t.origin_text)return alert('No hay dirección de origen disponible.');const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.origin_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.origin_text);window.open(url,'_blank','noopener,noreferrer');}));if(t.status==='in_progress'&&t.destination_text){card.append(makeBtn('Navegar al destino',()=>{const url=nav.value==='waze'?'https://waze.com/ul?q='+encodeURIComponent(t.destination_text)+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(t.destination_text);window.open(url,'_blank','noopener,noreferrer');}));}const reminder=document.createElement('p');reminder.className='muted';reminder.textContent='Inicio y finalización requieren validación segura del PIN y estado del viaje en Supabase. No se permite simular el inicio desde esta pantalla.';card.append(reminder);box.append(card);}}catch(err){box.textContent='Error al consultar viajes: '+err.message;}finally{loadingTrips=false;}}
 async function tripsAfterAction(){await new Promise(resolve=>setTimeout(resolve,150));loadingTrips=false;await trips();}
 await trips();refreshTimer=setInterval(()=>{if(!document.hidden)trips();},12000);
