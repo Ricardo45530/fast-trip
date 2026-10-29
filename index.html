@@ -7,12 +7,12 @@
 <main><h1>FAST TRIP</h1><p class="note">LO HACEMOS DIFERENTE</p><div class="line"></div>
 <section id="authPanel" class="panel"><h2>Acceso a FAST TRIP</h2><p><a class="button" target="_blank" rel="noopener noreferrer" href="https://wa.me/593963461706?text=Hola%2C%20deseo%20registrarme%20como%20conductor%20de%20FAST%20TRIP.">Registrarme como conductor</a></p><form id="loginForm"><label>Correo electrónico<input id="loginEmail" type="email" autocomplete="email" required></label><label>Contraseña</label><div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" required><button type="button" class="toggle-password" data-target="loginPassword">👁️ Ver</button></div><button>Iniciar sesión</button></form><button id="forgotButton" type="button" class="secondary">Olvidé mi contraseña</button><p id="loginMessage" class="message" role="status"></p></section>
 <section id="recoveryPanel" class="panel hidden"><h2>Crear nueva contraseña</h2><form id="recoveryForm"><label>Nueva contraseña<input id="newPassword" type="password" minlength="8" required></label><label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="8" required></label><button>Guardar contraseña</button></form><p id="recoveryMessage" class="message"></p></section>
-<section id="adminPanel" class="panel hidden"><h2>Panel de administración</h2><p>Gestión central FAST TRIP</p><div class="nav"><button data-section="sugerencias">💬 Sugerencias</button><button data-section="pasajeros">👤 Pasajeros</button><button data-section="conductores">🚘 Conductores</button><button data-section="vehiculos">🚙 Vehículos</button><button data-section="reservas">📅 Reservas</button><button data-section="encomiendas">📦 Encomiendas</button><button data-section="adolescentes">🧑‍🎓 Adolescentes</button><button data-section="documentos">📄 Documentos</button><button data-section="pagos">💰 Pagos</button><button data-section="mensajes">📲 Mensajes WhatsApp</button><button data-section="cancelaciones">🚨 Cancelaciones</button><button data-section="seguridad">🛡️ Centro de seguridad</button></div><p id="adminMessage" class="message"></p>
+<section id="adminPanel" class="panel hidden"><h2>Panel de administración</h2><p>Gestión central FAST TRIP</p><div class="nav"><button data-section="sugerencias">💬 Sugerencias</button><button data-section="pasajeros">👤 Pasajeros</button><button data-section="conductores">🚘 Conductores</button><button data-section="vehiculos">🚙 Vehículos</button><button data-section="reservas">📅 Reservas</button><button data-section="calificaciones">⭐ Calificaciones</button><button data-section="encomiendas">📦 Encomiendas</button><button data-section="adolescentes">🧑‍🎓 Adolescentes</button><button data-section="documentos">📄 Documentos</button><button data-section="pagos">💰 Pagos</button><button data-section="mensajes">📲 Mensajes WhatsApp</button><button data-section="cancelaciones">🚨 Cancelaciones</button><button data-section="seguridad">🛡️ Centro de seguridad</button></div><p id="adminMessage" class="message"></p>
 <div id="section-sugerencias" class="panel hidden"><h3>Sugerencias y reclamos</h3><p class="note">Historial recibido desde las aplicaciones. Los cambios de estado requieren permisos de administrador en Supabase.</p><div id="listaSugerencias"></div></div>
 <div id="section-pasajeros" class="panel hidden"><h3>Pasajeros</h3><div id="listaPasajeros"></div></div>
 <div id="section-conductores" class="panel hidden"><h3>Conductores</h3><p class="note">La aprobación del perfil no sustituye la validación de pagos, documentos, selfie ni vehículo.</p><div id="listaConductores"></div></div>
 <div id="section-vehiculos" class="panel hidden"><h3>Vehículos</h3><p class="note">Solo año modelo 2022 en adelante, matrícula vigente, inspección aprobada y autorización del propietario cuando corresponda.</p><div id="listaVehiculos"></div></div>
-<div class="panel" id="adminVoicePanel"><h3>🎙️ Avisos de voz de unidades QRZ</h3><label><input type="checkbox" id="adminVoiceEnabled"> Activar avisos hablados al iniciar y finalizar viajes</label><button type="button" id="adminVoiceTest">🔊 Probar voz</button><p id="adminVoiceStatus" role="status">Activa la voz y deja abierto el panel de Administración.</p></div><div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
+<div class="panel" id="adminVoicePanel"><h3>🎙️ Avisos de voz de unidades QRZ</h3><label><input type="checkbox" id="adminVoiceEnabled"> Activar avisos hablados al iniciar y finalizar viajes</label><button type="button" id="adminVoiceTest">🔊 Probar voz</button><p id="adminVoiceStatus" role="status">Activa la voz y deja abierto el panel de Administración.</p></div><div id="section-calificaciones" class="panel hidden"><h3>⭐ Calificaciones por viaje</h3><p class="note">Solo Administración puede ver cada evaluación y comentario.</p><div id="listaCalificaciones"></div></div><div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
 <div id="section-encomiendas" class="panel hidden"><h3>📦 Encomiendas</h3><p>Tarifa base: $2,50 hasta 2 km; $0,50 por km adicional; suplemento encomienda $1,00. Carga +$1,50 cuando corresponda, más peajes y recargos aplicables.</p><button type="button" id="refreshParcels">Actualizar encomiendas</button><div id="parcelList"></div></div>
 <div id="section-adolescentes" class="panel hidden"><h3>🧑‍🎓 Traslados adolescentes</h3><p>Supervisión únicamente: el tutor legal autoriza cada viaje mediante verificación independiente. Administración no sustituye esa autorización. Solicitudes pendientes NO deben despacharse.</p><button type="button" id="refreshTeens">Consultar solicitudes</button><div id="teenList"></div></div>
 <div id="section-documentos" class="panel hidden"><h3>Documentos por revisar</h3><p class="note">Avisar 15 días antes del vencimiento; bloquear al día siguiente del vencimiento si no existe renovación verificada. El bloqueo real debe ejecutarse en Supabase.</p><div id="listaDocumentos"></div></div>
@@ -74,7 +74,39 @@ async function renderSuggestions(){
 }
 async function updateSuggestion(id,status){await requireAdmin();const {data,error}=await client.from('suggestions').update({status}).eq('id',id).select('id');if(error)throw error;if(!data?.length)throw new Error('Supabase no confirmó la actualización.');await renderSuggestions();}
 
-const renderers={sugerencias:renderSuggestions,pasajeros:()=>renderProfiles('passenger'),conductores:()=>renderProfiles('driver'),vehiculos:renderVehicles,reservas:renderTrips,documentos:renderDocuments,pagos:renderPayments,mensajes:async()=>{},cancelaciones:()=>renderCancellations(),seguridad:renderSecurity};
+async function renderRatings(){
+ const root=$('listaCalificaciones');root.textContent='Consultando...';
+ try{
+  await requireAdmin();
+  const {data,error}=await client.from('trip_ratings').select('id,trip_id,rater_id,rated_user_id,score,comment,created_at').order('created_at',{ascending:false}).limit(100);
+  if(error)throw error;root.replaceChildren();
+  if(!data?.length){root.textContent='Todavía no hay calificaciones registradas.';return;}
+  const tripIds=[...new Set(data.map(r=>r.trip_id))];
+  const {data:trips,error:te}=await client.from('trips').select('id,driver_id,passenger_id,vehicle_id,origin_text,destination_text').in('id',tripIds);
+  if(te)throw te;
+  const tripMap=new Map((trips||[]).map(t=>[t.id,t]));
+  const personIds=[...new Set(data.flatMap(r=>[r.rater_id,r.rated_user_id]))];
+  const {data:profiles,error:pe}=await client.from('profiles').select('id,full_name').in('id',personIds);
+  if(pe)throw pe;
+  const names=new Map((profiles||[]).map(p=>[p.id,p.full_name]));
+  const vehicleIds=[...new Set((trips||[]).map(t=>t.vehicle_id).filter(Boolean))];
+  let vehicles=[];if(vehicleIds.length){const v=await client.from('vehicles').select('id,unit_number').in('id',vehicleIds);if(v.error)throw v.error;vehicles=v.data||[];}
+  const units=new Map(vehicles.map(v=>[v.id,v.unit_number]));
+  for(const r of data){
+   const t=tripMap.get(r.trip_id);
+   const isDriver=t?.driver_id===r.rated_user_id;
+   entry(root,[
+    'Conductor: '+(names.get(t?.driver_id)||'Sin asignar')+' · Unidad: '+(units.get(t?.vehicle_id)||'Sin QRZ'),
+    'Evaluación: '+(isDriver?'Pasajero → conductor':'Conductor → pasajero')+' · '+ '⭐'.repeat(r.score)+' ('+r.score+'/5)',
+    'Evaluado: '+(names.get(r.rated_user_id)||'No disponible')+' · Por: '+(names.get(r.rater_id)||'No disponible'),
+    'Viaje: '+(t?.origin_text||'Sin origen')+' → '+(t?.destination_text||'Sin destino'),
+    'Comentario: '+(r.comment||'Sin comentario'),
+    'Fecha: '+new Date(r.created_at).toLocaleString('es-EC')
+   ]);
+  }
+ }catch(e){root.textContent=errorText(e);}
+}
+const renderers={calificaciones:renderRatings,sugerencias:renderSuggestions,pasajeros:()=>renderProfiles('passenger'),conductores:()=>renderProfiles('driver'),vehiculos:renderVehicles,reservas:renderTrips,documentos:renderDocuments,pagos:renderPayments,mensajes:async()=>{},cancelaciones:()=>renderCancellations(),seguridad:renderSecurity};
 async function section(name){if(!(await admin())){say('adminMessage','Acceso no autorizado.');return;}for(const s of Object.keys(renderers))hide('section-'+s);show('section-'+name);activeSection=name;await renderers[name]();}
 function showAvailability(available){say('driverStatus','Estado: '+(available?'Conectado':'Desconectado'));$('btnConectar').disabled=available;$('btnDesconectar').disabled=!available;}
 let adminVoiceTimer=null,adminVoiceBusy=false,adminVoicePrimed=false;
