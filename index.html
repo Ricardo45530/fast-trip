@@ -7,12 +7,14 @@
 <main><h1>FAST TRIP</h1><p class="note">LO HACEMOS DIFERENTE</p><div class="line"></div>
 <section id="authPanel" class="panel"><h2>Acceso a FAST TRIP</h2><p><a class="button" target="_blank" rel="noopener noreferrer" href="https://wa.me/593963461706?text=Hola%2C%20deseo%20registrarme%20como%20conductor%20de%20FAST%20TRIP.">Registrarme como conductor</a></p><form id="loginForm"><label>Correo electrónico<input id="loginEmail" type="email" autocomplete="email" required></label><label>Contraseña</label><div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" required><button type="button" class="toggle-password" data-target="loginPassword">👁️ Ver</button></div><button>Iniciar sesión</button></form><button id="forgotButton" type="button" class="secondary">Olvidé mi contraseña</button><p id="loginMessage" class="message" role="status"></p></section>
 <section id="recoveryPanel" class="panel hidden"><h2>Crear nueva contraseña</h2><form id="recoveryForm"><label>Nueva contraseña<input id="newPassword" type="password" minlength="8" required></label><label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="8" required></label><button>Guardar contraseña</button></form><p id="recoveryMessage" class="message"></p></section>
-<section id="adminPanel" class="panel hidden"><h2>Panel de administración</h2><p>Gestión central FAST TRIP</p><div class="nav"><button data-section="sugerencias">💬 Sugerencias</button><button data-section="pasajeros">👤 Pasajeros</button><button data-section="conductores">🚘 Conductores</button><button data-section="vehiculos">🚙 Vehículos</button><button data-section="reservas">📅 Reservas</button><button data-section="documentos">📄 Documentos</button><button data-section="pagos">💰 Pagos</button><button data-section="mensajes">📲 Mensajes WhatsApp</button><button data-section="cancelaciones">🚨 Cancelaciones</button><button data-section="seguridad">🛡️ Centro de seguridad</button></div><p id="adminMessage" class="message"></p>
+<section id="adminPanel" class="panel hidden"><h2>Panel de administración</h2><p>Gestión central FAST TRIP</p><div class="nav"><button data-section="sugerencias">💬 Sugerencias</button><button data-section="pasajeros">👤 Pasajeros</button><button data-section="conductores">🚘 Conductores</button><button data-section="vehiculos">🚙 Vehículos</button><button data-section="reservas">📅 Reservas</button><button data-section="encomiendas">📦 Encomiendas</button><button data-section="adolescentes">🧑‍🎓 Adolescentes</button><button data-section="documentos">📄 Documentos</button><button data-section="pagos">💰 Pagos</button><button data-section="mensajes">📲 Mensajes WhatsApp</button><button data-section="cancelaciones">🚨 Cancelaciones</button><button data-section="seguridad">🛡️ Centro de seguridad</button></div><p id="adminMessage" class="message"></p>
 <div id="section-sugerencias" class="panel hidden"><h3>Sugerencias y reclamos</h3><p class="note">Historial recibido desde las aplicaciones. Los cambios de estado requieren permisos de administrador en Supabase.</p><div id="listaSugerencias"></div></div>
 <div id="section-pasajeros" class="panel hidden"><h3>Pasajeros</h3><div id="listaPasajeros"></div></div>
 <div id="section-conductores" class="panel hidden"><h3>Conductores</h3><p class="note">La aprobación del perfil no sustituye la validación de pagos, documentos, selfie ni vehículo.</p><div id="listaConductores"></div></div>
 <div id="section-vehiculos" class="panel hidden"><h3>Vehículos</h3><p class="note">Solo año modelo 2022 en adelante, matrícula vigente, inspección aprobada y autorización del propietario cuando corresponda.</p><div id="listaVehiculos"></div></div>
 <div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
+<div id="section-encomiendas" class="panel hidden"><h3>📦 Encomiendas</h3><p>Tarifa base: $2,50 hasta 2 km; $0,50 por km adicional; suplemento encomienda $1,00. Carga +$1,50 cuando corresponda, más peajes y recargos aplicables.</p><button type="button" id="refreshParcels">Actualizar encomiendas</button><div id="parcelList"></div></div>
+<div id="section-adolescentes" class="panel hidden"><h3>🧑‍🎓 Traslados adolescentes</h3><p>Supervisión únicamente: el tutor legal autoriza cada viaje mediante verificación independiente. Administración no sustituye esa autorización. Solicitudes pendientes NO deben despacharse.</p><button type="button" id="refreshTeens">Consultar solicitudes</button><div id="teenList"></div></div>
 <div id="section-documentos" class="panel hidden"><h3>Documentos por revisar</h3><p class="note">Avisar 15 días antes del vencimiento; bloquear al día siguiente del vencimiento si no existe renovación verificada. El bloqueo real debe ejecutarse en Supabase.</p><div id="listaDocumentos"></div></div>
 <div id="section-pagos" class="panel hidden"><h3>Pagos de conductores</h3><p class="note">Ingreso único USD 20. Cuota USD 15 por 168 horas desde el 1 de diciembre de 2026. La carga de un comprobante NO verifica el pago.</p><div id="listaPagos"></div></div>
 <div id="section-mensajes" class="panel hidden"><h3>Mensajes WhatsApp</h3><p class="note">Abre WhatsApp con el mensaje preparado; el envío automático requiere integración oficial.</p><label>Destinatario<input id="waPhone" inputmode="tel" placeholder="09xxxxxxxx"></label><label>Tipo de mensaje<select id="waTemplate"></select></label><label>Mensaje<textarea id="waText" rows="12"></textarea></label><button id="waOpen">Abrir WhatsApp</button><p id="waMessage" class="message"></p></div>
@@ -112,5 +114,31 @@ init().catch(e=>say('loginMessage','Error de inicio: '+errorText(e)));
   }catch(e){status.textContent='No se pudo consultar GPS: '+e.message;}
   finally{button.disabled=false;}
  });
+})();
+</script><script>
+(function(){
+ async function getClient(){
+  if(!window.supabase)throw Error('Supabase no disponible');
+  const sb=window.supabase.createClient('https://ftiuzwwshcocvkvtdngm.supabase.co','sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE');
+  const {data}=await sb.auth.getUser();if(!data?.user)throw Error('Inicia sesión como administrador');
+  const p=await sb.from('profiles').select('role,status').eq('id',data.user.id).maybeSingle();
+  if(p.error||p.data?.role!=='admin'||p.data?.status!=='approved')throw Error('Acceso reservado a Administración');
+  return sb;
+ }
+ async function show(table,target,fields,filter){
+  const root=document.getElementById(target);root.textContent='Consultando...';
+  try{
+   const sb=await getClient();let query=sb.from(table).select(fields).order('created_at',{ascending:false}).limit(60);
+   if(filter)query=query.eq('service_type','encomienda');
+   const {data,error}=await query;if(error)throw error;
+   root.replaceChildren();if(!data?.length){root.textContent='Sin registros.';return;}
+   for(const item of data){const p=document.createElement('p');p.textContent=table==='trips'
+    ?'📦 '+(item.origin_text||'')+' → '+(item.destination_text||'')+' · '+item.status+' · '+(item.notes||'')
+    :'🧑‍🎓 '+(item.origin_text||'')+' → '+(item.destination_text||'')+' · Estado: '+item.status+' · Tutor: '+item.guardian_phone+' · Adolescente: '+item.teen_phone;
+    root.append(p);}
+  }catch(e){root.textContent='No se pudo consultar: '+e.message;}
+ }
+ document.getElementById('refreshParcels').onclick=()=>show('trips','parcelList','id,origin_text,destination_text,status,notes,created_at',true);
+ document.getElementById('refreshTeens').onclick=()=>show('adolescent_trip_requests','teenList','id,origin_text,destination_text,status,guardian_phone,teen_phone,created_at',false);
 })();
 </script></body></html>
