@@ -2,10 +2,11 @@
   "name": "FAST TRIP Pasajeros",
   "short_name": "FT Pasajeros",
   "description": "Acceso a servicios de transporte FAST TRIP para pasajeros aprobados.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/fast-trip/pasajeros/",
+  "scope": "/fast-trip/pasajeros/",
   "display": "standalone",
   "background_color": "#080808",
   "theme_color": "#080808",
-  "lang": "es-EC"
+  "lang": "es-EC",
+  "id": "/fast-trip/pasajeros/"
 }
