@@ -72,7 +72,7 @@ async function checkTripVoice(){
    }
    const message=finished
     ?'¡Gracias por viajar con FAST TRIP! Agradecemos tu calificación y que nos recomiendes con tus familiares y amigos. En tiempos difíciles, FAST TRIP te cuida. ¡Te esperamos pronto! FAST TRIP. ¡Lo hacemos diferente!'
-    :'¡Gracias por viajar con FAST TRIP! A partir de ahora te acompañaremos durante tu recorrido en la unidad '+unit+'. Recuerda que puedes compartir el seguimiento de tu viaje con un familiar o amigo de confianza. También cuentas con un botón para comunicarte con nuestros operadores por WhatsApp y un botón de pánico para situaciones de emergencia. Tu seguridad es nuestra prioridad. FAST TRIP. ¡Lo hacemos diferente!';
+    :'¡Gracias por viajar con FAST TRIP! A partir de ahora te acompañaremos durante tu recorrido en la unidad '+unit+'. Recuerda que puedes compartir el seguimiento de tu viaje con un familiar o amigo de confianza. También cuentas con un botón para comunicarte con nuestros operadores por WhatsApp y un botón de pánico para situaciones de emergencia. Si viajas en el asiento delantero o posterior del vehículo, recuerda utilizar siempre el cinturón de seguridad. El cinturón también salva vidas. Tu seguridad es nuestra prioridad. FAST TRIP. ¡Lo hacemos diferente!';
    seen[key]=true;changed=true;speakFastTrip(message);
   }
   if(changed)localStorage.setItem(voiceSeenKey,JSON.stringify(seen));
