@@ -99,10 +99,9 @@ el('emergencyBtn').onclick=()=>{
  const message='URGENTE FAST TRIP. Soy pasajero y solicito asistencia de Central.';
  const openHelp=extra=>{
   const link='https://wa.me/593963461706?text='+encodeURIComponent(message+extra);
-  const popup=window.open(link,'_blank','noopener,noreferrer');
-  if(!popup)setMessage('emergencyMessage','Si no se abrió WhatsApp, permite ventanas emergentes o comunícate directamente con Central: 0963461706.');
-  else setMessage('emergencyMessage','WhatsApp abierto. Envía el mensaje para comunicarte con Central.');
+  setMessage('emergencyMessage','Abriendo WhatsApp. Recuerda enviar el mensaje manualmente.');
   btn.disabled=false;
+  window.location.assign(link);
  };
  btn.disabled=true;
  setMessage('emergencyMessage','Solicitando ubicación opcional para compartir con Central...');
