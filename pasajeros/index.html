@@ -107,6 +107,24 @@ async function loadTrips(){
   };
   article.appendChild(locate);
  }
+ if(trip.status==='in_progress'&&trip.driver_id){
+  const stop=document.createElement('button');stop.type='button';stop.textContent='➕ Agregar parada / Cambiar destino';
+  stop.onclick=async()=>{
+   const kind=window.prompt('Escribe 1 para agregar parada o 2 para cambiar destino:','1');
+   if(!['1','2'].includes(kind))return;
+   const address=window.prompt('Dirección exacta de la nueva parada o destino:','');
+   if(!address||address.trim().length<5)return alert('Ingresa una dirección válida.');
+   stop.disabled=true;
+   try{
+    const {error}=await client.from('trip_change_requests').insert({trip_id:trip.id,passenger_id:currentUser.id,driver_id:trip.driver_id,change_type:kind==='1'?'add_stop':'change_destination',requested_address:address.trim()});
+    if(error)throw error;
+    alert('Solicitud enviada al conductor. La ruta y el precio no cambiarán hasta que se confirme la modificación.');
+   }catch(e){alert('No se pudo enviar la solicitud: '+e.message);}finally{stop.disabled=false;}
+  };
+  article.append(stop);
+  const {data:changes}=await client.from('trip_change_requests').select('change_type,requested_address,status,created_at').eq('trip_id',trip.id).order('created_at',{ascending:false}).limit(3);
+  for(const change of changes||[]){const info=document.createElement('p');info.textContent='Parada/destino solicitado: '+change.requested_address+' · '+change.status;article.append(info);}
+ }
  box.appendChild(article);
 }
 }
