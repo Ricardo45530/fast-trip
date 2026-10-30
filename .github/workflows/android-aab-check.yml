@@ -1,0 +1,45 @@
+name: FAST TRIP - Verificar Android y generar AAB
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android/**'
+      - 'conductor/**'
+      - 'pasajeros/**'
+      - '.github/workflows/android-aab-check.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Verificar ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [conductor, pasajeros]
+    defaults:
+      run:
+        working-directory: android/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK de prueba y AAB sin firmar
+        run: gradle --no-daemon assembleDebug bundleRelease
+      - name: Guardar APK de prueba
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-trip-${{ matrix.app }}-debug
+          path: android/${{ matrix.app }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Guardar AAB sin firmar (NO subir a Play)
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-trip-${{ matrix.app }}-aab-sin-firmar
+          path: android/${{ matrix.app }}/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
