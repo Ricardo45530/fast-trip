@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'android/**'
+      - 'pasajeros/**'
+      - 'conductor/**'
       - '.github/workflows/android-apk.yml'
 jobs:
   build:
