@@ -1,3 +1,15 @@
 plugins { id 'com.android.application' }
 android { namespace 'ec.fasttrip.conductor'; compileSdk 35
- defaultConfig { applicationId 'ec.fasttrip.conductor'; minSdk 24; targetSdk 35; versionCode 1; versionName '1.0.0' } }
+ defaultConfig { applicationId 'ec.fasttrip.conductor'; minSdk 24; targetSdk 35; versionCode 1; versionName '1.0.0' } 
+ signingConfigs {
+  release {
+   if (System.getenv('FASTTRIP_KEYSTORE_PATH')) {
+    storeFile file(System.getenv('FASTTRIP_KEYSTORE_PATH'))
+    storePassword System.getenv('FASTTRIP_KEYSTORE_PASSWORD')
+    keyAlias System.getenv('FASTTRIP_KEY_ALIAS')
+    keyPassword System.getenv('FASTTRIP_KEY_PASSWORD')
+   }
+  }
+ }
+ buildTypes { release { if (System.getenv('FASTTRIP_KEYSTORE_PATH')) signingConfig signingConfigs.release } }
+}
