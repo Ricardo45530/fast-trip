@@ -33,10 +33,10 @@ jobs:
         run: gradle --no-daemon assembleDebug bundleRelease
       - name: Preparar firma de lanzamiento (si está configurada)
         env:
-          FASTTRIP_KEYSTORE_BASE64: ${{ secrets.FASTTRIP_KEYSTORE_BASE64 }}
-          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets.FASTTRIP_KEYSTORE_PASSWORD }}
-          FASTTRIP_KEY_ALIAS: ${{ secrets.FASTTRIP_KEY_ALIAS }}
-          FASTTRIP_KEY_PASSWORD: ${{ secrets.FASTTRIP_KEY_PASSWORD }}
+          FASTTRIP_KEYSTORE_BASE64: ${{ secrets[format('FASTTRIP_{0}_KEYSTORE_BASE64', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
+          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets[format('FASTTRIP_{0}_KEYSTORE_PASSWORD', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
+          FASTTRIP_KEY_ALIAS: ${{ secrets[format('FASTTRIP_{0}_KEY_ALIAS', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
+          FASTTRIP_KEY_PASSWORD: ${{ secrets[format('FASTTRIP_{0}_KEY_PASSWORD', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
         run: |
           if [ -n "$FASTTRIP_KEYSTORE_BASE64" ] && [ -n "$FASTTRIP_KEYSTORE_PASSWORD" ] && [ -n "$FASTTRIP_KEY_ALIAS" ] && [ -n "$FASTTRIP_KEY_PASSWORD" ]; then
             printf '%s' "$FASTTRIP_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/fasttrip-release.jks"
@@ -48,9 +48,9 @@ jobs:
       - name: Generar AAB firmado para Google Play
         if: env.FASTTRIP_SIGNING_READY == 'true'
         env:
-          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets.FASTTRIP_KEYSTORE_PASSWORD }}
-          FASTTRIP_KEY_ALIAS: ${{ secrets.FASTTRIP_KEY_ALIAS }}
-          FASTTRIP_KEY_PASSWORD: ${{ secrets.FASTTRIP_KEY_PASSWORD }}
+          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets[format('FASTTRIP_{0}_KEYSTORE_PASSWORD', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
+          FASTTRIP_KEY_ALIAS: ${{ secrets[format('FASTTRIP_{0}_KEY_ALIAS', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
+          FASTTRIP_KEY_PASSWORD: ${{ secrets[format('FASTTRIP_{0}_KEY_PASSWORD', matrix.app == 'pasajeros' && 'PASAJEROS' || 'CONDUCTOR')] }}
         run: gradle --no-daemon bundleRelease
       - name: Guardar AAB firmado para Google Play
         if: env.FASTTRIP_SIGNING_READY == 'true'
