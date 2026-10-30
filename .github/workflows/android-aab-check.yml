@@ -31,6 +31,34 @@ jobs:
           gradle-version: '8.9'
       - name: Compilar APK de prueba y AAB sin firmar
         run: gradle --no-daemon assembleDebug bundleRelease
+      - name: Preparar firma de lanzamiento (si está configurada)
+        env:
+          FASTTRIP_KEYSTORE_BASE64: ${{ secrets.FASTTRIP_KEYSTORE_BASE64 }}
+          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets.FASTTRIP_KEYSTORE_PASSWORD }}
+          FASTTRIP_KEY_ALIAS: ${{ secrets.FASTTRIP_KEY_ALIAS }}
+          FASTTRIP_KEY_PASSWORD: ${{ secrets.FASTTRIP_KEY_PASSWORD }}
+        run: |
+          if [ -n "$FASTTRIP_KEYSTORE_BASE64" ] && [ -n "$FASTTRIP_KEYSTORE_PASSWORD" ] && [ -n "$FASTTRIP_KEY_ALIAS" ] && [ -n "$FASTTRIP_KEY_PASSWORD" ]; then
+            printf '%s' "$FASTTRIP_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/fasttrip-release.jks"
+            echo "FASTTRIP_KEYSTORE_PATH=$RUNNER_TEMP/fasttrip-release.jks" >> "$GITHUB_ENV"
+            echo "FASTTRIP_SIGNING_READY=true" >> "$GITHUB_ENV"
+          else
+            echo "Sin credenciales de firma: se conserva AAB sin firmar."
+          fi
+      - name: Generar AAB firmado para Google Play
+        if: env.FASTTRIP_SIGNING_READY == 'true'
+        env:
+          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets.FASTTRIP_KEYSTORE_PASSWORD }}
+          FASTTRIP_KEY_ALIAS: ${{ secrets.FASTTRIP_KEY_ALIAS }}
+          FASTTRIP_KEY_PASSWORD: ${{ secrets.FASTTRIP_KEY_PASSWORD }}
+        run: gradle --no-daemon bundleRelease
+      - name: Guardar AAB firmado para Google Play
+        if: env.FASTTRIP_SIGNING_READY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-trip-${{ matrix.app }}-aab-firmado-play
+          path: android/${{ matrix.app }}/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
       - name: Guardar APK de prueba
         uses: actions/upload-artifact@v4
         with:
@@ -38,6 +66,7 @@ jobs:
           path: android/${{ matrix.app }}/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
       - name: Guardar AAB sin firmar (NO subir a Play)
+        if: env.FASTTRIP_SIGNING_READY != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: fast-trip-${{ matrix.app }}-aab-sin-firmar
