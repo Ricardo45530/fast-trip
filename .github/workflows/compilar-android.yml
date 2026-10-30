@@ -18,10 +18,10 @@ jobs:
       matrix:
         include:
           - app: conductor
-            app_id: ec.fasttrip.conductor
+            app_id: com.fasttrip.conductor
             app_name: FAST TRIP Conductor
           - app: pasajeros
-            app_id: ec.fasttrip.pasajeros
+            app_id: com.fasttrip.pasajeros
             app_name: FAST TRIP Pasajeros
     steps:
       - uses: actions/checkout@v4
