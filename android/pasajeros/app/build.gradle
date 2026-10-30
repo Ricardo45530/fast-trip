@@ -1,3 +1,15 @@
 plugins { id 'com.android.application' }
 android { namespace 'ec.fasttrip.pasajeros'; compileSdk 35
- defaultConfig { applicationId 'ec.fasttrip.pasajeros'; minSdk 24; targetSdk 35; versionCode 3; versionName '1.0.2' } }
+ defaultConfig { applicationId 'ec.fasttrip.pasajeros'; minSdk 24; targetSdk 35; versionCode 3; versionName '1.0.2' } 
+ signingConfigs {
+  release {
+   if (System.getenv('FASTTRIP_KEYSTORE_PATH')) {
+    storeFile file(System.getenv('FASTTRIP_KEYSTORE_PATH'))
+    storePassword System.getenv('FASTTRIP_KEYSTORE_PASSWORD')
+    keyAlias System.getenv('FASTTRIP_KEY_ALIAS')
+    keyPassword System.getenv('FASTTRIP_KEY_PASSWORD')
+   }
+  }
+ }
+ buildTypes { release { if (System.getenv('FASTTRIP_KEYSTORE_PATH')) signingConfig signingConfigs.release } }
+}
