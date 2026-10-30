@@ -9,7 +9,8 @@
 </head>
 <body>
 <section class="bienvenida" id="welcome"><button class="boton" id="startBtn">Solicitar un viaje</button></section>
-<section class="panel hidden" id="access"><h2>FAST TRIP Pasajeros</h2><p>Ingresa con la cuenta de pasajero aprobada por FAST TRIP.</p><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><label><input id="showPassword" type="checkbox" style="width:auto"> Mostrar contraseña</label><button type="submit" class="login-submit">INICIAR SESIÓN</button></form><div class="account-links"><a class="boton" style="display:inline-block;text-decoration:none;text-align:center" href="https://wa.me/593963461706?text=Quiero%20registrarme%20como%20pasajero%20en%20FAST%20TRIP" target="_blank" rel="noopener noreferrer">REGISTRARSE COMO PASAJERO</a><small>Solicita tu registro a Central. Tu cuenta necesitará aprobación de Administración antes de acceder.</small><button id="createBtn" class="text-link" type="button">Crear contraseña</button><button id="recoverBtn" class="text-link" type="button">Recuperar contraseña</button></div><button id="backBtn" class="secondary" type="button">Volver</button><p id="accessMessage" class="message" role="status"></p><small>Si tu registro ya fue aprobado, puedes crear tu contraseña con el correo registrado. No necesitas volver a registrarte.</small></section>
+<section class="panel hidden" id="access"><h2>FAST TRIP Pasajeros</h2><p>Ingresa con la cuenta de pasajero aprobada por FAST TRIP.</p><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><label><input id="showPassword" type="checkbox" style="width:auto"> Mostrar contraseña</label><button type="submit" class="login-submit">INICIAR SESIÓN</button></form><div class="account-links"><button id="registerBtn" type="button">REGISTRARSE COMO PASAJERO</button><small>Solicita tu registro a Central. Tu cuenta necesitará aprobación de Administración antes de acceder.</small><button id="createBtn" class="text-link" type="button">Crear contraseña</button><button id="recoverBtn" class="text-link" type="button">Recuperar contraseña</button></div><button id="backBtn" class="secondary" type="button">Volver</button><p id="accessMessage" class="message" role="status"></p><small>Si tu registro ya fue aprobado, puedes crear tu contraseña con el correo registrado. No necesitas volver a registrarte.</small></section>
+<section class="panel hidden" id="registration"><h2>Registro de pasajero</h2><p>Guayaquil · Tu solicitud requiere aprobación administrativa.</p><form id="registrationForm"><label>Nombre completo</label><input name="full_name" maxlength="160" required><label>Número de cédula</label><input name="national_id" inputmode="numeric" maxlength="20" required><label>Teléfono</label><input name="phone" type="tel" maxlength="25" required><label>Correo electrónico</label><input name="email" type="email" maxlength="254" required><label>Dirección exacta</label><input name="address" maxlength="500" minlength="8" required><label>Ciudad</label><select name="city"><option value="Guayaquil">Guayaquil</option><option disabled>Quito — Próximamente</option><option disabled>Cuenca — Próximamente</option></select><p><small>La fotografía se solicitará por un canal seguro durante la revisión. No envíes imágenes de tu cédula.</small></p><button type="submit" id="registrationSubmit">ENVIAR SOLICITUD</button></form><p id="registrationMessage" class="message" role="status"></p><button type="button" id="registrationBack" class="secondary">Volver</button></section>
 <section class="panel hidden" id="reset"><h2>Crear nueva contraseña</h2><form id="resetForm"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="8" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" required><button type="submit">Guardar contraseña</button></form><p id="resetMessage" class="message"></p></section>
 <section class="panel hidden" id="tripPanel"><h2>Solicitar viaje</h2><p id="greeting"></p><form id="tripForm"><label for="origin">Origen (dirección de recogida)</label><input id="origin" maxlength="250" required placeholder="Ej. Urdesa, Guayaquil"><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="Ej. Mall del Sol, Guayaquil"><button type="submit" id="sendBtn">Enviar solicitud</button></form><p id="tripMessage" class="message" role="status"></p><h2>Mis solicitudes</h2><button id="refreshBtn" class="secondary" type="button">Actualizar estado</button><div id="tripHistory"></div><button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button></section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,7 +22,7 @@ const REDIRECT_URL='https://ricardo45530.github.io/fast-trip/pasajeros/';
 const el=id=>document.getElementById(id);
 const setMessage=(id,text)=>el(id).textContent=text;
 let client=null,recovering=false,currentUser=null;
-function screen(id){for(const name of ['welcome','access','reset','tripPanel'])el(name).classList.toggle('hidden',name!==id);}
+function screen(id){for(const name of ['welcome','access','registration','reset','tripPanel'])el(name).classList.toggle('hidden',name!==id);}
 async function checkPassenger(){
  const {data:{user},error:userError}=await client.auth.getUser();
  if(userError||!user){currentUser=null;screen('access');return;}
@@ -52,6 +53,21 @@ async function init(){
 }
 el('startBtn').onclick=()=>{screen('access');if(client)void checkPassenger();};
 el('backBtn').onclick=()=>screen('welcome');
+el('registerBtn').onclick=()=>screen('registration');
+el('registrationBack').onclick=()=>screen('access');
+el('registrationForm').onsubmit=async e=>{
+ e.preventDefault();if(!client){setMessage('registrationMessage','Sin conexión. Intenta nuevamente.');return;}
+ const btn=el('registrationSubmit');btn.disabled=true;
+ try{
+ const f=new FormData(e.currentTarget);
+ const payload={full_name:String(f.get('full_name')).trim(),national_id:String(f.get('national_id')).trim(),phone:String(f.get('phone')).trim(),email:String(f.get('email')).trim().toLowerCase(),address:String(f.get('address')).trim(),city:'Guayaquil'};
+ const {error}=await client.from('passenger_registration_requests').insert(payload);
+ if(error)throw error;
+ e.currentTarget.reset();
+ setMessage('registrationMessage','Solicitud recibida. Pendiente de revisión y aprobación por FAST TRIP. No puedes solicitar viajes hasta ser aprobado.');
+ }catch(err){setMessage('registrationMessage','No se pudo enviar la solicitud: '+err.message);}
+ finally{btn.disabled=false;}
+};
 el('showPassword').onchange=e=>{el('password').type=e.target.checked?'text':'password';};
 el('loginForm').onsubmit=async e=>{e.preventDefault();if(!client)return;setMessage('accessMessage','Verificando acceso...');const {error}=await client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});el('password').value='';if(error){setMessage('accessMessage','No se pudo iniciar sesión. Revisa tus datos o recupera tu contraseña.');return;}setMessage('accessMessage','');await checkPassenger();};
 async function requestPasswordLink(mode){
