@@ -45,6 +45,22 @@ jobs:
           else
             echo "Sin credenciales de firma: se conserva AAB sin firmar."
           fi
+      - name: Validar archivo de firma de Conductor
+        if: matrix.app == 'conductor' && env.FASTTRIP_SIGNING_READY == 'true'
+        env:
+          FASTTRIP_KEYSTORE_PASSWORD: ${{ secrets.FASTTRIP_CONDUCTOR_KEYSTORE_PASSWORD }}
+          FASTTRIP_KEY_ALIAS: ${{ secrets.FASTTRIP_CONDUCTOR_KEY_ALIAS }}
+        run: |
+          set -e
+          if [ ! -s "$FASTTRIP_KEYSTORE_PATH" ]; then
+            echo "::error::El archivo JKS de Conductor está vacío o no existe."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$FASTTRIP_KEYSTORE_PATH" -storepass "$FASTTRIP_KEYSTORE_PASSWORD" -alias "$FASTTRIP_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::No se pudo abrir el JKS de Conductor con la contraseña y el alias configurados. Comprueba que el BASE64 corresponde al JKS original y que la contraseña del almacén y el alias son los correctos."
+            exit 1
+          fi
+          echo "Archivo JKS, contraseña del almacén y alias de Conductor verificados."
       - name: Generar AAB firmado para Google Play
         if: env.FASTTRIP_SIGNING_READY == 'true'
         env:
