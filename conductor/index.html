@@ -16,7 +16,7 @@
 <section id="register" class="panel hidden"><h2>Solicitar registro</h2><form id="registerForm"><label>Nombre completo<input name="name" required></label><label>Celular<input name="phone" type="tel" required></label><label>Correo de acceso (solo si ya está asociado a tu cuenta)<input name="mail" type="email"></label><label>Placa del vehículo<input name="plate" placeholder="Se verificará en Administración"></label><button type="submit">Enviar solicitud por WhatsApp</button></form><p id="registerStatus" role="status"></p><button id="backLogin" type="button">Volver al acceso</button></section>
 <section id="reset" class="panel hidden"><h2>Nueva contraseña</h2><form id="resetForm"><label>Nueva contraseña<input id="newpass" type="password" minlength="8" required autocomplete="new-password"></label><label>Confirmar contraseña<input id="confirm" type="password" minlength="8" required autocomplete="new-password"></label><button type="submit">Guardar contraseña</button></form><p id="resetStatus" role="status"></p></section>
 <section id="private" class="hidden"><div class="panel"><h2>Mi cuenta</h2><p id="hello"></p><div id="roleArea"></div><button id="logout" type="button">Cerrar sesión</button></div>
-<div class="panel"><h2>🚘 Mi unidad y mis datos</h2><div id="driverIdentityStatus" class="muted" role="status">Consultando datos registrados…</div><div id="driverVehicleStatus" class="muted"></div><p class="muted">Las fotografías y los documentos solo se mostrarán cuando estén cargados y validados en el sistema. El estado del vehículo no confirma por sí solo que todos los protocolos de despacho estén operativos.</p></div>
+<div class="panel"><h2>🚘 Mi unidad y mis datos</h2><div id="driverIdentityStatus" class="muted" role="status">Consultando datos registrados…</div><div id="driverVehicleStatus" class="muted"></div><label for="driverPhotoInput">Fotografía de perfil (camisa negra)</label><input id="driverPhotoInput" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" id="driverPhotoUpload">Guardar foto de perfil</button><p id="driverPhotoMessage" class="muted" role="status"></p><p class="muted">Las fotografías y los documentos solo se mostrarán cuando estén cargados y validados en el sistema. El estado del vehículo no confirma por sí solo que todos los protocolos de despacho estén operativos.</p></div>
 <div class="panel"><h2>💬 Central FAST TRIP</h2><button id="waChat">Mensaje por WhatsApp</button><button id="waCall">Solicitar llamada por WhatsApp</button><p class="muted">La llamada se inicia manualmente desde WhatsApp. Central: 0963461706.</p></div>
 <div class="panel"><h2>💡 Sugerencias y reclamos</h2><form id="suggestionForm"><label for="suggestion">Tu mensaje</label><textarea id="suggestion" required minlength="5" rows="4"></textarea><button type="submit">Guardar en Administración</button></form><button id="waSuggestion">Enviar también por WhatsApp</button><p id="suggestionStatus" class="status" role="status"></p></div>
 <div class="panel"><h2>📄 Documentos y habilitación</h2><p class="muted">La carga y verificación de documentos, pagos y activación del dispositivo requieren integración segura con Administración. No se muestran aprobaciones ni cobros simulados.</p></div>
@@ -48,6 +48,26 @@ $('loginForm').onsubmit=async e=>{e.preventDefault();if(!sup)return say('loginSt
 $('logout').onclick=async()=>{stopPolling();await sup?.auth.signOut();profile=null;user=null;show('access');};
 $('registerLink').onclick=()=>show('register');$('backLogin').onclick=()=>show('access');
 $('registerForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);wa('Hola Central FAST TRIP. Solicito registrarme como conductor. Nombre: '+f.get('name')+'. Celular: '+f.get('phone')+'. Correo: '+(f.get('mail')||'No proporcionado')+'. Placa: '+(f.get('plate')||'Pendiente')+'. Solicito instrucciones para registro y aprobación.');say('registerStatus','Se abrió WhatsApp. Envía el mensaje a Central. Esto no crea una cuenta ni equivale a aprobación.');};
+$('driverPhotoUpload').onclick=async()=>{
+ const input=$('driverPhotoInput'),message=$('driverPhotoMessage'),file=input.files?.[0];
+ if(!user||!sup)return message.textContent='Inicia sesión como conductor.';
+ if(!file)return message.textContent='Selecciona una fotografía.';
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)return message.textContent='Usa JPG, PNG o WEBP de hasta 5 MB.';
+ message.textContent='Guardando fotografía de forma privada…';
+ const name=user.id+'/profile.jpg';
+ try{
+  const blob=await createImageBlob(file);
+  const r=await sup.storage.from('driver-photos').upload(name,blob,{contentType:'image/jpeg',upsert:false});
+  if(r.error){message.textContent=r.error.message.includes('already exists')?'Ya existe una fotografía; su reemplazo debe autorizarlo Administración.':'No se pudo subir: '+r.error.message;return;}
+  message.textContent='Fotografía guardada en almacenamiento privado.';input.value='';await loadDriverIdentity();
+ }catch(e){message.textContent='No se pudo procesar la fotografía: '+e.message;}
+};
+async function createImageBlob(file){
+ const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas'),max=900,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+ canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+ canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+ return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Imagen inválida')),'image/jpeg',0.85));
+}
 async function loadDriverIdentity(){
  const identity=$('driverIdentityStatus'),vehicle=$('driverVehicleStatus');
  identity.textContent='Consultando tu perfil…';vehicle.textContent='Consultando unidad…';
@@ -61,7 +81,11 @@ async function loadDriverIdentity(){
    const x=p.data;identity.replaceChildren();
    const line=document.createElement('p');line.textContent='Conductor: '+(x.full_name||'Sin nombre')+' · Teléfono: '+(x.phone||'Sin registrar')+' · Cuenta: '+(x.status||'Sin estado');identity.append(line);
    if(x.photo_url){const img=document.createElement('img');img.alt='Fotografía de perfil del conductor';img.loading='lazy';img.style.cssText='width:128px;height:160px;object-fit:cover;border:1px solid #b99142;border-radius:12px';img.src=x.photo_url;identity.append(img);}
-   else{const note=document.createElement('p');note.textContent='Fotografía de perfil pendiente de carga.';identity.append(note);}
+   else{
+    const signed=await sup.storage.from('driver-photos').createSignedUrl(user.id+'/profile.jpg',300);
+    if(!signed.error&&signed.data?.signedUrl){const img=document.createElement('img');img.alt='Fotografía del conductor';img.style.cssText='width:128px;height:160px;object-fit:cover;border:1px solid #b99142;border-radius:12px';img.src=signed.data.signedUrl;identity.append(img);}
+    else{const note=document.createElement('p');note.textContent='Fotografía de perfil pendiente de carga.';identity.append(note);}
+   }
   }
   if(v.error)vehicle.textContent='No se pudo consultar la unidad: '+v.error.message;
   else if(!v.data?.length)vehicle.textContent='No hay unidad registrada para esta cuenta.';
