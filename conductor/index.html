@@ -74,7 +74,7 @@ async function loadVehicleChange(){
  if(r.error){status.textContent='No se pudo consultar la solicitud: '+r.error.message;return;}
  const limitResult=await sup.from('driver_unit_limits').select('units_used,suspended_until,retired_code').eq('driver_id',user.id).maybeSingle();
  const lim=limitResult.data;
- const limitText=lim?.suspended_until?'Código '+(lim.retired_code||'QRZ')+' retirado definitivamente. Suspensión mínima hasta '+new Date(lim.suspended_until).toLocaleDateString('es-EC')+'. La reincorporación requiere Administración y un código nuevo.':'Unidades utilizadas: '+(lim?.units_used||1)+' de 3. Al solicitar una cuarta unidad, tu QRZ será retirado para siempre y tu cuenta suspendida dos años.';
+ const limitText=lim?.suspended_until?'Código '+(lim.retired_code||'QRZ')+' retirado definitivamente. Suspensión mínima hasta '+new Date(lim.suspended_until).toLocaleDateString('es-EC')+'. Después de dos años puedes solicitar reincorporación con tu mismo QRZ y una nueva unidad, sujeto a aprobación de Administración.':'Unidades utilizadas: '+(lim?.units_used||1)+' de 3. Al solicitar una cuarta unidad, tu QRZ será retirado para siempre y tu cuenta suspendida dos años.';
  const current=r.data?.[0];
  checkbox.checked=!!current;checkbox.disabled=!!lim?.suspended_until||(!!current&&current.status!=='rejected');
  form.classList.toggle('hidden',current?.status!=='authorized');
