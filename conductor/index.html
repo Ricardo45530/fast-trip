@@ -70,18 +70,18 @@ async function createImageBlob(file){
 }
 async function loadVehicleChange(){
  const status=$('vehicleChangeMessage'),form=$('vehicleChangeForm'),checkbox=$('requestVehicleChange');
- const r=await sup.from('vehicle_change_requests').select('id,status,admin_note').eq('driver_id',user.id).order('created_at',{ascending:false}).limit(1);
+ const r=await sup.from('vehicle_change_requests').select('id,status,admin_note,replacement_reason').eq('driver_id',user.id).order('created_at',{ascending:false}).limit(1);
  if(r.error){status.textContent='No se pudo consultar la solicitud: '+r.error.message;return;}
  const limitResult=await sup.from('driver_unit_limits').select('units_used,suspended_until,retired_code').eq('driver_id',user.id).maybeSingle();
  const lim=limitResult.data;
- const limitText=lim?.suspended_until?'Código '+(lim.retired_code||'QRZ')+' retirado definitivamente. Suspensión mínima hasta '+new Date(lim.suspended_until).toLocaleDateString('es-EC')+'. Después de dos años puedes solicitar reincorporación con tu mismo QRZ y una nueva unidad, sujeto a aprobación de Administración.':'Unidades utilizadas: '+(lim?.units_used||1)+' de 3. Al solicitar una cuarta unidad, tu QRZ será retirado para siempre y tu cuenta suspendida dos años.';
+ const expired=await sup.from('vehicles').select('id,plate,model_year,unit_number').eq('driver_id',user.id).eq('status','blocked').not('age_expired_at','is',null).not('unit_number','is',null).limit(1);const expiredUnit=expired.data?.[0];$('changeYear').min=String(new Date().getFullYear()-4);$('changeYear').max=String(new Date().getFullYear()); const limitText=lim?.suspended_until?'Código '+(lim.retired_code||'QRZ')+' reservado para ti. Suspensión mínima hasta '+new Date(lim.suspended_until).toLocaleDateString('es-EC')+'. Después de dos años puedes solicitar reincorporación con tu mismo QRZ y una nueva unidad, sujeto a aprobación de Administración.':(expiredUnit?'Unidad '+expiredUnit.plate+' retirada por cumplir seis años. Puedes reemplazarla sin consumir cambios voluntarios y conservar tu QRZ. ':'')+'Cambios voluntarios: '+Math.max(0,(lim?.units_used||1)-1)+' de 2 disponibles antes de la suspensión por cuarta solicitud. Las renovaciones por antigüedad no cuentan.';
  const current=r.data?.[0];
- checkbox.checked=!!current;checkbox.disabled=!!lim?.suspended_until||(!!current&&current.status!=='rejected');
+ checkbox.checked=!!current&&current.status!=='activated';checkbox.disabled=!!lim?.suspended_until||(!!current&&!['rejected','activated'].includes(current.status));
  form.classList.toggle('hidden',current?.status!=='authorized');
  status.textContent=limitText+' '+(!current?'Marca la casilla para enviar una solicitud a Administración.':({'requested':'Solicitud enviada. Esperando autorización para actualizar datos.','authorized':'Administración autorizó continuar. Completa los datos del nuevo vehículo.','submitted':'Datos enviados. Esperando aprobación final de Administración.','approved':'Cambio documental aprobado. La reasignación operativa del QRZ requiere verificación administrativa.','activated':'Cambio de vehículo activado por Administración. Tu QRZ se conserva en el nuevo vehículo.','rejected':'Solicitud rechazada. '+(current.admin_note||'Puedes iniciar una nueva solicitud.')})[current.status]||current.status);
  checkbox.onchange=async()=>{
   if(!checkbox.checked)return;
-  if(current&&current.status!=='rejected')return;
+  if(current&&!['rejected','activated'].includes(current.status))return;
   checkbox.disabled=true;
   const x=await sup.from('vehicle_change_requests').insert({driver_id:user.id,status:'requested'});
   if(x.error){status.textContent='No se pudo enviar: '+x.error.message;checkbox.disabled=false;checkbox.checked=false;return;}
@@ -90,7 +90,7 @@ async function loadVehicleChange(){
  $('submitVehicleChange').onclick=async()=>{
   if(!current||current.status!=='authorized')return;
   const x=await sup.rpc('driver_submit_vehicle_change',{p_request_id:current.id,p_plate:$('changePlate').value,p_model:$('changeModel').value,p_color:$('changeColor').value,p_year:Number($('changeYear').value),p_note:$('changeDocs').value});
-  if(x.error||x.data!==true){status.textContent='No se enviaron los datos: '+(x.error?.message||'Revisa placa, modelo y año 2022 o posterior.');return;}
+  if(x.error||x.data!==true){status.textContent='No se enviaron los datos: '+(x.error?.message||'Revisa placa, modelo y antigüedad máxima de cuatro años.');return;}
   await loadVehicleChange();
  };
 }
