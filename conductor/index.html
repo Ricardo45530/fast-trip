@@ -75,7 +75,7 @@ async function loadVehicleChange(){
  const current=r.data?.[0];
  checkbox.checked=!!current;checkbox.disabled=!!current&&current.status!=='rejected';
  form.classList.toggle('hidden',current?.status!=='authorized');
- status.textContent=!current?'Marca la casilla para enviar una solicitud a Administración.':({'requested':'Solicitud enviada. Esperando autorización para actualizar datos.','authorized':'Administración autorizó continuar. Completa los datos del nuevo vehículo.','submitted':'Datos enviados. Esperando aprobación final de Administración.','approved':'Cambio documental aprobado. La reasignación operativa del QRZ requiere verificación administrativa.','rejected':'Solicitud rechazada. '+(current.admin_note||'Puedes iniciar una nueva solicitud.')})[current.status]||current.status;
+ status.textContent=!current?'Marca la casilla para enviar una solicitud a Administración.':({'requested':'Solicitud enviada. Esperando autorización para actualizar datos.','authorized':'Administración autorizó continuar. Completa los datos del nuevo vehículo.','submitted':'Datos enviados. Esperando aprobación final de Administración.','approved':'Cambio documental aprobado. La reasignación operativa del QRZ requiere verificación administrativa.','activated':'Cambio de vehículo activado por Administración. Tu QRZ se conserva en el nuevo vehículo.','rejected':'Solicitud rechazada. '+(current.admin_note||'Puedes iniciar una nueva solicitud.')})[current.status]||current.status;
  checkbox.onchange=async()=>{
   if(!checkbox.checked)return;
   if(current&&current.status!=='rejected')return;
