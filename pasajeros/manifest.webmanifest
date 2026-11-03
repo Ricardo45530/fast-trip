@@ -1,0 +1,11 @@
+{
+  "name": "FAST TRIP Pasajeros",
+  "short_name": "FT Pasajeros",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "lang": "es",
+  "description": "Solicita viajes en FAST TRIP Guayaquil"
+}
