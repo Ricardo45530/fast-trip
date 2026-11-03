@@ -94,6 +94,14 @@ async function renderVehicleChanges(){
    }
    if(x.status==='requested'){action(item,'Autorizar actualización',()=>decision('authorized'));action(item,'Rechazar',()=>decision('rejected'),true);}
    if(x.status==='submitted'){action(item,'Aprobar revisión documental',()=>decision('approved'));action(item,'Rechazar',()=>decision('rejected'),true);}
+   if(x.status==='approved'){
+    action(item,'Activar reemplazo QRZ',async()=>{
+     if(!confirm('¿Confirmas que el nuevo vehículo ya fue registrado como PENDIENTE, se verificaron sus documentos, matrícula, fotos e inspección y deseas bloquear la unidad anterior y transferir su QRZ?'))return;
+     const r=await client.rpc('admin_activate_vehicle_replacement',{p_request_id:x.id});
+     if(r.error||r.data!==true)throw new Error(r.error?.message||'No se pudo transferir QRZ');
+     alert('Transferencia realizada en Supabase.');await renderVehicleChanges();
+    });
+   }
   }
  }catch(e){root.textContent=errorText(e);}
 }
