@@ -1,105 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#080808"><link rel="manifest" href="./manifest.webmanifest"><title>FAST TRIP Pasajeros</title>
-<style>
-html{width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}*{box-sizing:border-box}body{width:100%;overflow-x:hidden}.panel{width:calc(100% - 28px);max-width:480px;padding:clamp(14px,4vw,24px)}input,select{max-width:100%;min-width:0}.panel button{max-width:100%}
-
-*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;background:#080808 url('logo%20pasajeros.jpeg') center center/cover fixed no-repeat;color:white;font-family:Arial,sans-serif} .bienvenida{min-height:100vh;min-height:100dvh;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:30px 20px 60px}.boton,button{background:linear-gradient(135deg,#f8df86,#c99a27);color:#111;border:0;border-radius:25px;padding:15px 25px;font-size:17px;font-weight:bold;cursor:pointer}.bienvenida .boton{width:100%;max-width:320px} .panel{max-width:480px;margin:25px auto;padding:24px;background:rgba(12,12,12,.87);border:1px solid #bd9535;border-radius:14px}h2{color:#e9c65b}label{display:block;margin:14px 0 6px}input,select{width:100%;padding:13px;background:#292929;color:white;border:1px solid #b99a4a;border-radius:8px;font-size:16px}button{margin:12px 5px 0 0}.secondary{background:#333;color:#f8df86;border:1px solid #a98735}.hidden{display:none!important}.message{line-height:1.5;overflow-wrap:anywhere}small{color:#ccc}#tripHistory article{border-top:1px solid #8b712f;padding:12px 0;white-space:pre-line;line-height:1.65;overflow-wrap:anywhere}.account-links{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:16px 0}.text-link{background:none!important;border:0!important;color:#f1d17c!important;font-size:13px!important;font-weight:normal!important;text-decoration:underline;padding:0!important;margin:0!important;border-radius:0!important;cursor:pointer}.login-submit{display:block;width:100%;margin-top:18px}.panel{box-shadow:0 8px 30px rgba(0,0,0,.35)}.account-links{align-items:center;gap:14px}.register-elegant{display:block;width:min(100%,250px);min-height:44px;margin:8px auto 0!important;padding:11px 16px!important;border:1px solid #c9a44b!important;border-radius:28px!important;background:rgba(7,7,7,.88)!important;color:#f4d784!important;font-size:12px!important;font-weight:700!important;letter-spacing:.25px;box-shadow:0 3px 15px rgba(0,0,0,.3)}.register-elegant:active{background:#252017!important}.account-links small{text-align:center;font-size:12px;line-height:1.5}.account-links .text-link{align-self:center}
- .panel{text-align:center}.panel form{text-align:left}.panel .secondary{display:block;width:fit-content;min-width:130px;margin:20px auto!important}.panel .message{text-align:center}.panel>small{display:block;text-align:center;line-height:1.5}.account-links{align-items:center!important}.account-links .text-link{align-self:center!important}.login-submit{margin-left:auto!important;margin-right:auto!important}#registrationForm button,#resetForm button,#tripForm button{display:block;margin:18px auto!important}#registrationForm p{text-align:center}
-.account-links #recoverBtn{font-size:11px!important;font-weight:400!important;margin:3px auto 0!important;padding:5px 8px!important}.account-links .login-submit{width:min(100%,280px);min-height:45px;margin:5px auto 12px!important;border-radius:24px;font-size:15px!important}
-
-/* Bandera ecuatoriana animada, fija en la parte superior */
-.ft-ecuador-flag{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;filter:drop-shadow(0 2px 5px #0009);line-height:1;font-size:clamp(25px,7vw,34px);transform-origin:center;animation:ft-flag-wave 3s ease-in-out infinite}
-@keyframes ft-flag-wave{0%,100%{transform:translateX(-50%) rotate(-3deg) skewY(-2deg)}50%{transform:translateX(-50%) rotate(3deg) skewY(2deg)}}
-@media(prefers-reduced-motion:reduce){.ft-ecuador-flag{animation:none}}
-</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b0d"><meta name="description" content="Tu próximo viaje con FAST TRIP. Transporte ejecutivo en Guayaquil y alrededores.">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="stylesheet" href="./app.css?v=4"><title>FAST TRIP · Pasajeros</title>
 </head>
-<body><div class="ft-ecuador-flag" role="img" aria-label="Bandera del Ecuador ondeando">🇪🇨</div>
-<section class="bienvenida" id="welcome"><button class="boton" id="startBtn">Solicitar un viaje</button></section>
-<section class="panel hidden" id="access"><h2>FAST TRIP Pasajeros</h2><p>Ingresa con la cuenta de pasajero aprobada por FAST TRIP.</p><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required><label><input id="showPassword" type="checkbox" style="width:auto"> Mostrar contraseña</label></form><div class="account-links"><button id="recoverBtn" class="text-link" type="button">¿Olvidaste tu contraseña?</button><button type="submit" form="loginForm" class="login-submit">INICIAR SESIÓN</button><button id="registerBtn" class="register-elegant" type="button">REGISTRARSE COMO PASAJERO</button><small>Tu solicitud necesita aprobación de Administración.</small><button id="createBtn" class="text-link" type="button">Crear contraseña</button></div><button id="backBtn" class="secondary" type="button">Volver</button><p id="accessMessage" class="message" role="status"></p><small>Si tu registro ya fue aprobado, puedes crear tu contraseña con el correo registrado. No necesitas volver a registrarte.</small></section>
-<section class="panel hidden" id="registration"><h2>Registro de pasajero</h2><p>Guayaquil · Tu solicitud requiere aprobación administrativa.</p><form id="registrationForm"><label>Nombre completo</label><input name="full_name" maxlength="160" required><label>Número de cédula</label><input name="national_id" inputmode="numeric" maxlength="20" required><label>Teléfono</label><input name="phone" type="tel" maxlength="25" required><label>Correo electrónico</label><input name="email" type="email" maxlength="254" required><label>Dirección exacta</label><input name="address" maxlength="500" minlength="8" required><label>Ciudad</label><select name="city"><option value="Guayaquil">Guayaquil</option><option disabled>Quito — Próximamente</option><option disabled>Cuenca — Próximamente</option></select><p><small>La fotografía se solicitará por un canal seguro durante la revisión. No envíes imágenes de tu cédula.</small></p><button type="submit" id="registrationSubmit">ENVIAR SOLICITUD</button></form><p id="registrationMessage" class="message" role="status"></p><button type="button" id="registrationBack" class="secondary">Volver</button></section>
-<section class="panel hidden" id="reset"><h2>Crear nueva contraseña</h2><form id="resetForm"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="8" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" required><button type="submit">Guardar contraseña</button></form><p id="resetMessage" class="message"></p></section>
-<section class="panel hidden" id="tripPanel"><h2>Solicitar viaje</h2><p id="greeting"></p><form id="tripForm"><label for="origin">Origen (dirección de recogida)</label><input id="origin" maxlength="250" required placeholder="Ej. Urdesa, Guayaquil"><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="Ej. Mall del Sol, Guayaquil"><button type="submit" id="sendBtn">Enviar solicitud</button></form><p id="tripMessage" class="message" role="status"></p><h2>Mis solicitudes</h2><button id="refreshBtn" class="secondary" type="button">Actualizar estado</button><div id="tripHistory"></div><button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button></section>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-'use strict';
-const SUPABASE_URL='https://ftiuzwwshcocvkvtdngm.supabase.co';
-const SUPABASE_KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
-const REDIRECT_URL='https://ricardo45530.github.io/fast-trip/pasajeros/';
-const el=id=>document.getElementById(id);
-const setMessage=(id,text)=>el(id).textContent=text;
-let client=null,recovering=false,currentUser=null;
-function screen(id){for(const name of ['welcome','access','registration','reset','tripPanel'])el(name).classList.toggle('hidden',name!==id);}
-async function checkPassenger(){
- const {data:{user},error:userError}=await client.auth.getUser();
- if(userError||!user){currentUser=null;screen('access');return;}
- const {data:profile,error}=await client.from('profiles').select('id,full_name,role,status').eq('id',user.id).maybeSingle();
- if(error){screen('access');setMessage('accessMessage','No se pudo consultar tu perfil: '+error.message);return;}
- if(!profile||profile.role!=='passenger'||profile.status!=='approved'){
-  currentUser=null;screen('access');setMessage('accessMessage','Esta cuenta no tiene un perfil de pasajero aprobado. Consulta con Administración.');return;
- }
- currentUser=user;el('greeting').textContent='Bienvenido/a, '+(profile.full_name||'pasajero/a')+'.';screen('tripPanel');await loadTrips();
-}
-async function loadTrips(){
- if(!currentUser)return;
- const box=el('tripHistory');box.textContent='Consultando...';
- const {data,error}=await client.from('trips').select('id,origin_text,destination_text,status,created_at').eq('passenger_id',currentUser.id).order('created_at',{ascending:false}).limit(15);
- if(error){box.textContent='No se pudo consultar el historial: '+error.message;return;}
- if(!data?.length){box.textContent='Todavía no tienes solicitudes.';return;}
- box.replaceChildren();for(const trip of data){const article=document.createElement('article');article.textContent='Origen: '+(trip.origin_text||'')+'\nDestino: '+(trip.destination_text||'')+'\nEstado: '+(trip.status||'sin estado');box.appendChild(article);}
-}
-async function init(){
- if(!window.supabase){screen('access');setMessage('accessMessage','No se pudo cargar Supabase. Revisa tu conexión.');return;}
- client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
- client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;screen('access');}});
- const hash=new URLSearchParams(location.hash.slice(1));const query=new URLSearchParams(location.search);
- if(hash.get('type')==='recovery'||query.get('type')==='recovery')recovering=true;
- const {data:{session}}=await client.auth.getSession();
- if(recovering&&session){screen('reset');return;}
- if(session)await checkPassenger();
-}
-el('startBtn').onclick=()=>{screen('access');if(client)void checkPassenger();};
-el('backBtn').onclick=()=>screen('welcome');
-el('registerBtn').onclick=()=>screen('registration');
-el('registrationBack').onclick=()=>screen('access');
-el('registrationForm').onsubmit=async e=>{
- e.preventDefault();if(!client){setMessage('registrationMessage','Sin conexión. Intenta nuevamente.');return;}
- const btn=el('registrationSubmit');btn.disabled=true;
- try{
- const f=new FormData(e.currentTarget);
- const payload={full_name:String(f.get('full_name')).trim(),national_id:String(f.get('national_id')).trim(),phone:String(f.get('phone')).trim(),email:String(f.get('email')).trim().toLowerCase(),address:String(f.get('address')).trim(),city:'Guayaquil'};
- const {error}=await client.from('passenger_registration_requests').insert(payload);
- if(error)throw error;
- e.currentTarget.reset();
- setMessage('registrationMessage','Solicitud recibida. Pendiente de revisión y aprobación por FAST TRIP. No puedes solicitar viajes hasta ser aprobado.');
- }catch(err){setMessage('registrationMessage','No se pudo enviar la solicitud: '+err.message);}
- finally{btn.disabled=false;}
-};
-el('showPassword').onchange=e=>{el('password').type=e.target.checked?'text':'password';};
-el('loginForm').onsubmit=async e=>{e.preventDefault();if(!client)return;setMessage('accessMessage','Verificando acceso...');const {error}=await client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});el('password').value='';if(error){setMessage('accessMessage','No se pudo iniciar sesión. Revisa tus datos o recupera tu contraseña.');return;}setMessage('accessMessage','');await checkPassenger();};
-async function requestPasswordLink(mode){
- if(!client)return;
- const email=el('email').value.trim();
- if(!email){setMessage('accessMessage','Primero escribe tu correo electrónico registrado.');el('email').focus();return;}
- setMessage('accessMessage','Solicitando enlace seguro...');
- const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:REDIRECT_URL});
- setMessage('accessMessage',error?'No se pudo enviar el enlace: '+error.message:mode==='create'?'Si tu correo corresponde a una cuenta existente, recibirás un enlace para crear tu contraseña. Revisa también correo no deseado.':'Si tu correo corresponde a una cuenta existente, recibirás un enlace para recuperar tu contraseña. Revisa también correo no deseado.');
-}
-el('createBtn').onclick=()=>void requestPasswordLink('create');
-el('recoverBtn').onclick=()=>void requestPasswordLink('recover');
-el('resetForm').onsubmit=async e=>{e.preventDefault();if(!client)return;const a=el('newPassword').value,b=el('confirmPassword').value;if(a.length<8||a!==b){setMessage('resetMessage','Las contraseñas deben coincidir y tener al menos 8 caracteres.');return;}const {error}=await client.auth.updateUser({password:a});if(error){setMessage('resetMessage',error.message);return;}await client.auth.signOut();recovering=false;history.replaceState({},'',location.pathname);screen('access');setMessage('accessMessage','Contraseña actualizada. Inicia sesión.');};
-el('tripForm').onsubmit=async e=>{e.preventDefault();if(!client||!currentUser)return;const origin=el('origin').value.trim(),destination=el('destination').value.trim();if(!origin||!destination||origin===destination){setMessage('tripMessage','Indica origen y destino diferentes.');return;}
- const btn=el('sendBtn');btn.disabled=true;setMessage('tripMessage','Enviando solicitud...');
- try{await checkPassenger();if(!currentUser){setMessage('accessMessage','Tu cuenta debe estar aprobada.');return;}
- // El servidor debe imponer el pasajero autenticado, el estado pendiente y los permisos RLS.
- const {error}=await client.from('trips').insert({passenger_id:currentUser.id,origin_text:origin,destination_text:destination,status:'pending'});
- if(error){setMessage('tripMessage','No se pudo crear el viaje: '+error.message+'. Revisaremos las columnas y permisos de Supabase.');return;}
- setMessage('tripMessage','Solicitud enviada. Pendiente de asignación; todavía no significa que un conductor la haya aceptado.');el('tripForm').reset();await loadTrips();
- }catch(err){setMessage('tripMessage','Error: '+(err?.message||'desconocido'));}finally{btn.disabled=false;}
-};
-el('refreshBtn').onclick=()=>void loadTrips();el('logoutBtn').onclick=async()=>{if(client)await client.auth.signOut();screen('welcome');};
-init().catch(err=>{screen('access');setMessage('accessMessage','Error al iniciar: '+err.message);});
-</script>
-</body></html>
+<body>
+<div class="ambient" aria-hidden="true"></div><main>
+<header><a class="wordmark" href="#" aria-label="FAST TRIP, inicio"><b>FAST</b> TRIP<span>LO HACEMOS DIFERENTE</span></a><span class="flag" role="img" aria-label="Bandera del Ecuador">🇪🇨</span><span class="edition">PASAJEROS</span></header>
+<p id="connection" class="connection hidden" role="status">Sin conexión. Revisa tu señal para continuar.</p>
+<section id="welcome" class="screen hero"><div class="hero-copy"><p class="eyebrow">GUAYAQUIL Y ALREDEDORES</p><h1>Tu destino.<br><em>Nuestro compromiso.</em></h1><p>Viaja con la confianza de estar acompañado.</p></div><div class="welcome-bottom"><button id="startBtn" class="gold">Solicitar un viaje <span aria-hidden="true">↗</span></button><button id="welcomeRegister" class="outline">Registrarme como pasajero</button><a class="daro" data-wa="Hola DARO, necesito información sobre FAST TRIP.">✦ Conéctate con DARO</a><p class="fine">Transporte ejecutivo · Aeropuerto · Encomiendas</p></div></section>
+<section id="access" class="screen hidden"><div class="section-heading"><p class="eyebrow">BIENVENIDO A BORDO</p><h1>Vuelve a viajar.</h1><p>Ingresa con tu cuenta aprobada.</p></div><div class="card"><form id="loginForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required><label for="password">Contraseña</label><div class="password-row"><input id="password" type="password" autocomplete="current-password" required><button id="showPassword" type="button" class="quiet" aria-label="Mostrar contraseña" aria-pressed="false">Ver</button></div><button id="recoverBtn" type="button" class="text-link">¿Olvidaste tu contraseña?</button><button id="loginSubmit" class="gold" type="submit">Iniciar sesión</button></form><p id="accessMessage" class="message" role="status"></p><button id="registerBtn" class="outline">Registrarme como pasajero</button><button id="createBtn" class="text-link centered">Crear mi contraseña después de la aprobación</button></div><button class="back" data-screen="welcome">← Volver</button></section>
+<section id="registration" class="screen hidden"><div class="section-heading"><p class="eyebrow">TU PRIMER VIAJE EMPIEZA AQUÍ</p><h1>Únete a FAST TRIP.</h1><p>Administración revisará tu solicitud una sola vez.</p></div><div class="card"><form id="registrationForm"><label for="fullName">Nombre completo</label><input id="fullName" name="full_name" maxlength="160" autocomplete="name" required><label for="nationalId">Número de cédula</label><input id="nationalId" name="national_id" maxlength="20" required><label for="phone">Teléfono</label><input id="phone" name="phone" type="tel" maxlength="25" autocomplete="tel" required><label for="registrationEmail">Correo electrónico</label><input id="registrationEmail" name="email" type="email" autocomplete="email" required><label for="address">Dirección exacta</label><input id="address" name="address" maxlength="500" minlength="8" autocomplete="street-address" required><label for="city">Ciudad</label><select id="city"><option>Guayaquil</option><option disabled>Quito · Próximamente</option><option disabled>Cuenca · Próximamente</option></select><p class="fine">La selfie o foto carnet se coordina con DARO durante la revisión.</p><button id="registrationSubmit" class="gold">Enviar solicitud</button></form><p id="registrationMessage" class="message" role="status"></p><a class="daro" data-wa="Quiero registrarme como pasajero. Necesito completar mi documentación con DARO.">Completar mi registro con DARO ↗</a></div><button class="back" data-screen="access">← Volver al acceso</button></section>
+<section id="reset" class="screen hidden"><div class="section-heading"><p class="eyebrow">ACCESO SEGURO</p><h1>Tu nueva contraseña.</h1></div><form id="resetForm" class="card"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required><button class="gold">Guardar contraseña</button><p id="resetMessage" class="message" role="status"></p></form></section>
+<section id="tripPanel" class="screen hidden"><div class="section-heading compact"><p class="eyebrow" id="greeting">BIENVENIDO A BORDO</p><h1>¿A dónde vamos?</h1><p>Un viaje a tu medida.</p></div>
+<nav class="tabs" aria-label="Secciones de pasajeros"><button data-tab="request" aria-current="page">Pedir viaje</button><button data-tab="history">Mis viajes</button><button data-tab="account">Mi cuenta</button></nav>
+<div id="request" class="tab-content"><div class="card"><form id="tripForm"><label for="service">Servicio</label><select id="service"><option value="Transporte ejecutivo">Transporte ejecutivo</option><option value="Traslado al aeropuerto">Traslado al aeropuerto</option><option value="Encomiendas">Encomiendas</option><option value="Viaje privado / turismo">Viaje privado / turismo</option><option value="Viaje por hora">Viaje por hora</option></select><div class="route"><label for="origin">Recogida</label><input id="origin" maxlength="250" required placeholder="Dirección exacta y referencia"><button id="locateBtn" class="text-link" type="button">⌖ Usar mi ubicación actual</button><p id="locationStatus" class="fine" role="status"></p><label for="destination">Destino</label><input id="destination" maxlength="250" required placeholder="¿A dónde quieres ir?"></div><label for="notes">Indicaciones adicionales <span class="optional">(opcional)</span></label><textarea id="notes" rows="2" maxlength="800" placeholder="Equipaje, referencias o necesidades del viaje"></textarea><p class="fine">El pago y la tarifa se coordinan con FAST TRIP. Tu solicitud se confirma cuando un conductor la acepta.</p><button id="sendBtn" class="gold">Solicitar viaje <span aria-hidden="true">↗</span></button></form><p id="tripMessage" class="message" role="status"></p></div><details class="card rates"><summary>Conoce nuestras tarifas locales</summary><dl><div><dt>Primeros 2 km</dt><dd>$2,50</dd></div><div><dt>Kilómetro adicional</dt><dd>$0,50</dd></div><div><dt>Espera desde el minuto 6</dt><dd>$0,25/min</dd></div><div><dt>Nocturno · 22:00–06:00</dt><dd>+$1,50</dd></div><div><dt>Encomienda / carga</dt><dd>+$1,00 / $1,50</dd></div><div><dt>Peaje por paso</dt><dd>+$1,00</dd></div></dl><p class="fine">Los Ceibos, Entre Ríos, Vía a la Costa y Chongón: un solo recargo de $1,00. Viajes por hora y privados: consulta la cotización con DARO.</p></details></div>
+<div id="history" class="tab-content hidden"><div class="list-heading"><h2>Mis viajes</h2><button id="refreshBtn" class="quiet">Actualizar</button></div><p id="syncStatus" class="fine" role="status"></p><div id="tripHistory"></div></div>
+<div id="account" class="tab-content hidden"><div class="card"><p class="eyebrow">MI PERFIL</p><h2 id="profileName"></h2><p id="profilePhone"></p><span class="badge">Cuenta aprobada</span><a class="daro" data-wa="Hola DARO, soy pasajero y quiero actualizar mis datos.">Actualizar mis datos con DARO ↗</a></div><div class="card"><h2>Te escuchamos.</h2><form id="suggestionForm"><label for="suggestion">Sugerencias y reclamos</label><textarea id="suggestion" minlength="5" maxlength="1500" required rows="3" placeholder="Cuéntanos cómo podemos mejorar"></textarea><button class="outline">Enviar a Administración</button></form><p id="suggestionMessage" class="message" role="status"></p><a class="daro" data-wa="Hola DARO, quiero presentar una sugerencia o reclamo como pasajero.">Escribir por WhatsApp ↗</a></div><button id="logoutBtn" class="outline">Cerrar sesión</button><p class="fine centered">FAST TRIP Pasajeros · v1.0.3</p></div>
+<a class="daro footer-daro" data-wa="Hola DARO, soy pasajero y necesito asistencia con mi viaje.">✦ Conéctate con DARO</a></section>
+<dialog id="actionDialog"><form id="actionForm"><p class="eyebrow">FAST TRIP · ASISTENCIA</p><h2 id="actionTitle"></h2><p id="actionDescription"></p><div id="ratingField" class="hidden"><label for="rating">Calificación</label><select id="rating"><option value="5">★★★★★ · Excelente</option><option value="4">★★★★ · Muy bueno</option><option value="3">★★★ · Bueno</option><option value="2">★★ · Regular</option><option value="1">★ · Malo</option></select></div><label for="actionText" id="actionLabel">Motivo</label><textarea id="actionText" maxlength="1000" rows="3"></textarea><p id="actionMessage" class="message" role="status"></p><button id="actionSubmit" class="gold">Enviar</button><button id="actionClose" class="outline" type="button">Volver</button></form></dialog>
+<footer class="legal"><a href="./privacidad.html">Privacidad y datos personales</a><span>© FAST TRIP Ecuador</span></footer>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1"></script><script src="./app.js?v=4"></script></body></html>
