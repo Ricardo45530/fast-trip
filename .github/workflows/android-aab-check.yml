@@ -28,7 +28,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: ${{ matrix.app == 'pasajeros' && '8.11.1' || '8.9' }}
       - name: Compilar APK de prueba y AAB sin firmar
         run: gradle --no-daemon assembleDebug bundleRelease
       - name: Preparar firma de lanzamiento (si está configurada)
