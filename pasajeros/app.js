@@ -153,9 +153,10 @@ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{tab(b.data
 window.addEventListener('online',()=>{connection();if(currentUser)void loadTrips();});window.addEventListener('offline',connection);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)void loadTrips();});
 async function init(){
  connection();if(!window.supabase){screen('access');message('accessMessage','No se pudo conectar con FAST TRIP. Revisa tu conexión y vuelve a abrir la app.');return;}
+ const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);recovering=['recovery','invite'].includes(h.get('type'))||['recovery','invite'].includes(q.get('type'));
  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
- client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;stopPolling();screen('access');}});
- const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);recovering=h.get('type')==='recovery'||q.get('type')==='recovery';
+ client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_IN'&&recovering){screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;stopPolling();screen('access');}});
+
  const r=await client.auth.getSession();if(recovering&&r.data?.session){screen('reset');return;}if(r.data?.session&&await checkPassenger())await loadTrips();
 }
 init().catch(()=>{screen('access');message('accessMessage','No se pudo iniciar la app. Revisa tu conexión y vuelve a abrirla.');});
