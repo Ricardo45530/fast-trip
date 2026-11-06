@@ -20,7 +20,9 @@ const passengerExperience=(()=>{
   function tryPhoto(){
    if(thisGeneration!==generation||attempts++>=catalog.length)return;
    if(!bag.length)bag=shuffle(catalog.filter(p=>p.slug!==last).map(p=>p.slug));
-   const slug=bag.shift(),photo=catalog.find(p=>p.slug===slug);
+   const slug=bag.shift();
+   if(slug===last&&catalog.length>1){bag.push(slug);tryPhoto();return;}
+   const photo=catalog.find(p=>p.slug===slug);
    if(!photo)return;
    const image=new Image();
    image.onload=()=>{
