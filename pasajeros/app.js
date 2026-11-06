@@ -8,7 +8,7 @@ const ACTIVE=['pending','offered','accepted','in_progress'];
 const STATUS={pending:'Buscando conductor',offered:'Esperando confirmación',accepted:'Conductor asignado',in_progress:'En camino a tu destino',completed:'Viaje completado',cancelled:'Viaje cancelado',rejected:'Solicitud rechazada',no_driver:'Sin conductor disponible'};
 const MONEY=new Intl.NumberFormat('es-EC',{style:'currency',currency:'USD'});
 let client,currentUser=null,profile=null,recovering=false,trips=[],cancelRequests=[],loading=false,poll=null,pickup=null,action=null,lastRender='',activeScreen='welcome';
-function screen(id){activeScreen=id;for(const name of ['welcome','access','registration','reset','tripPanel'])$(name).classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
+function screen(id){if(id==='registration'&&!passengerExperience.hasAcceptedTerms())id='terms';activeScreen=id;for(const name of ['welcome','terms','access','registration','reset','tripPanel'])$(name).classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
 function tab(id){document.querySelectorAll('.tab-content').forEach(x=>x.classList.toggle('hidden',x.id!==id));document.querySelectorAll('[data-tab]').forEach(x=>{if(x.dataset.tab===id)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});}
 function whatsapp(text){return 'https://wa.me/593963171259?text='+encodeURIComponent(text);}
 function errorText(error){if(!navigator.onLine)return 'Sin conexión. Revisa tu señal e intenta nuevamente.';if(error?.code==='23505')return 'Esta solicitud ya está registrada. Actualiza el estado antes de intentar otra vez.';return 'No pudimos completar la operación. Intenta nuevamente o contacta a DARO.';}
@@ -23,7 +23,7 @@ async function checkPassenger(){
  const p=await client.from('profiles').select('id,full_name,phone,role,status').eq('id',data.user.id).maybeSingle();
  if(p.error){message('accessMessage',errorText(p.error));screen('access');return false;}
  if(p.data?.role!=='passenger'||p.data?.status!=='approved'){currentUser=null;stopPolling();screen('access');message('accessMessage','Tu cuenta necesita la aprobación de Administración. Comunícate con DARO para revisar tu registro.');return false;}
- currentUser=data.user;profile=p.data;
+ currentUser=data.user;profile=p.data;passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
  message('greeting','HOLA, '+(profile.full_name||'PASAJERO').split(' ')[0].toUpperCase());
  message('profileName',profile.full_name);message('profilePhone',profile.phone||'Teléfono por confirmar con DARO');
  screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},12000);return true;
@@ -115,7 +115,7 @@ $('tripForm').onsubmit=async e=>{
  const p=await client.from('profiles').select('role,status').eq('id',uid).single();if(p.error||p.data.role!=='passenger'||p.data.status!=='approved'){currentUser=null;stopPolling();screen('access');message('accessMessage','Tu cuenta necesita aprobación de Administración.');return;}
  const payload={passenger_id:uid,origin_text:origin,destination_text:destination,service_type:$('service').value,notes:$('notes').value.trim()||null,status:'pending'};
  if(pickup){payload.pickup_lat=pickup.lat;payload.pickup_lng=pickup.lng;}
- const r=await client.from('trips').insert(payload);if(r.error)throw r.error;
+ const r=await client.from('trips').insert(payload);if(r.error)throw r.error;passengerExperience.nextLandscape();
  $('tripForm').reset();pickup=null;message('locationStatus','');message('tripMessage','Solicitud enviada. Espera la confirmación de un conductor.');await loadTrips();tab('history');
  }catch(err){message('tripMessage',errorText(err));}finally{btn.disabled=trips.some(t=>ACTIVE.includes(t.status));}
 };
@@ -143,20 +143,22 @@ $('suggestionForm').onsubmit=async e=>{
  try{const r=await client.from('suggestions').insert({user_id:currentUser.id,role:'passenger',message:text});if(r.error)throw r.error;e.target.reset();message('suggestionMessage','Gracias. Tu mensaje quedó registrado en Administración.');}catch(err){message('suggestionMessage',errorText(err));}finally{btn.disabled=false;}
 };
 $('startBtn').onclick=async()=>{screen('access');if(client&&await checkPassenger())await loadTrips();};
-$('registerBtn').onclick=$('welcomeRegister').onclick=()=>screen('registration');
+$('registerBtn').onclick=$('welcomeRegister').onclick=()=>screen(passengerExperience.hasAcceptedTerms()?'registration':'terms');
+$('acceptTerms').onclick=()=>{passengerExperience.acceptTerms();message('termsMessage','');screen('registration');};
+$('declineTerms').onclick=()=>{message('termsMessage','Has elegido no aceptar. Para iniciar tu solicitud necesitas aceptar las condiciones. Puedes volver o contactar a DARO si tienes dudas.');};
 $('showPassword').onclick=()=>{const show=$('password').type==='password';$('password').type=show?'text':'password';message('showPassword',show?'Ocultar':'Ver');$('showPassword').setAttribute('aria-pressed',String(show));$('showPassword').setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');};
 $('recoverBtn').onclick=()=>passwordLink('recover');$('createBtn').onclick=()=>passwordLink('create');$('refreshBtn').onclick=()=>loadTrips();
-$('logoutBtn').onclick=async()=>{if(!client)return;const r=await client.auth.signOut();if(r.error){message('syncStatus',errorText(r.error));return;}currentUser=null;profile=null;pickup=null;stopPolling();screen('welcome');};
+$('logoutBtn').onclick=async()=>{if(!client)return;const r=await client.auth.signOut();if(r.error){message('syncStatus',errorText(r.error));return;}currentUser=null;profile=null;pickup=null;passengerExperience.sessionUser=null;stopPolling();screen('access');};
 for(const a of document.querySelectorAll('[data-wa]')){a.href=whatsapp(a.dataset.wa);a.target='_blank';a.rel='noopener noreferrer';}
 for(const b of document.querySelectorAll('[data-screen]'))b.onclick=()=>screen(b.dataset.screen);
 for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{tab(b.dataset.tab);if(b.dataset.tab==='history')void loadTrips();};
 window.addEventListener('online',()=>{connection();if(currentUser)void loadTrips();});window.addEventListener('offline',connection);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)void loadTrips();});
 async function init(){
- connection();if(!window.supabase){screen('access');message('accessMessage','No se pudo conectar con FAST TRIP. Revisa tu conexión y vuelve a abrir la app.');return;}
+ screen(passengerExperience.isReturning()?'access':'welcome');connection();if(!window.supabase){screen(passengerExperience.isReturning()?'access':'welcome');message('connection','No se pudo conectar con FAST TRIP. Revisa tu conexión y vuelve a abrir la app.');$('connection').classList.remove('hidden');return;}
  const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);recovering=['recovery','invite'].includes(h.get('type'))||['recovery','invite'].includes(q.get('type'));
  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_IN'&&recovering){screen('reset');}else if(event==='SIGNED_OUT'){currentUser=null;stopPolling();screen('access');}});
 
  const r=await client.auth.getSession();if(recovering&&r.data?.session){screen('reset');return;}if(r.data?.session&&await checkPassenger())await loadTrips();
 }
-init().catch(()=>{screen('access');message('accessMessage','No se pudo iniciar la app. Revisa tu conexión y vuelve a abrirla.');});
+init().catch(()=>{screen(passengerExperience.isReturning()?'access':'welcome');message('connection','No se pudo iniciar la app. Revisa tu conexión y vuelve a abrirla.');$('connection').classList.remove('hidden');});
