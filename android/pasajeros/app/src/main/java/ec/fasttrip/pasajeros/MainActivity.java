@@ -7,6 +7,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.view.WindowInsets;
+import android.window.OnBackInvokedDispatcher;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -44,7 +47,16 @@ public class MainActivity extends Activity {
     requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},40);
    }
   });
-  setContentView(web);web.loadUrl(HOME);
+  if(Build.VERSION.SDK_INT>=30){
+   getWindow().setDecorFitsSystemWindows(false);
+   web.setOnApplyWindowInsetsListener((view,insets)->{
+    android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());
+    view.setPadding(bars.left,bars.top,bars.right,bars.bottom);
+    return insets;
+   });
+  }
+  if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
+  setContentView(web);web.requestApplyInsets();web.loadUrl(HOME);
  }
  private boolean navigate(Uri uri){
   if(trusted(uri))return false;
@@ -58,7 +70,8 @@ public class MainActivity extends Activity {
   super.onRequestPermissionsResult(request,permissions,results);
   if(request==40 && locationCallback!=null){boolean allowed=false;for(int result:results)if(result==PackageManager.PERMISSION_GRANTED)allowed=true;locationCallback.invoke(locationOrigin,allowed,false);locationCallback=null;locationOrigin=null;}
  }
- @Override public void onBackPressed(){
+ @Override public void onBackPressed(){handleBack();}
+ private void handleBack(){
   web.evaluateJavascript("(function(){var d=document.getElementById('actionDialog');if(d&&d.open){d.close();return true;}if(typeof activeScreen!=='undefined' && activeScreen!=='welcome' && activeScreen!=='reset'){screen('welcome');return true;}return false;})()",result->{if(!"true".equals(result)){if(web.canGoBack())web.goBack();else finish();}});
  }
  @Override protected void onDestroy(){if(locationCallback!=null)locationCallback.invoke(locationOrigin,false,false);if(web!=null){web.stopLoading();web.destroy();}super.onDestroy();}
