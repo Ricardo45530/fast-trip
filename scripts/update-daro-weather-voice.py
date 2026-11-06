@@ -1,10 +1,13 @@
-import asyncio, base64, json, os, urllib.request
+import asyncio, base64, json, os, urllib.request, urllib.error
 import edge_tts
 URL='https://ftiuzwwshcocvkvtdngm.supabase.co/functions/v1/daro-weather'
 KEY='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE'
 def post(data):
  req=urllib.request.Request(URL,data=json.dumps(data).encode(),headers={'Content-Type':'application/json','apikey':KEY})
- with urllib.request.urlopen(req,timeout=60) as r:return json.load(r)
+ try:
+  with urllib.request.urlopen(req,timeout=60) as r:return json.load(r)
+ except urllib.error.HTTPError as e:
+  print('Weather endpoint status:',e.code,'Message:',e.read().decode()[:200]);raise
 async def main():
  data=post({})
  if data.get('audio_base64'):print('El boletín ya tiene su voz actualizada.');return
