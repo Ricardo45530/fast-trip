@@ -1,6 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 import {createRemoteJWKSet,jwtVerify} from 'npm:jose@5.9.6';
-import { Buffer } from 'node:buffer';
 import { summarizeForecast } from './weather.js';
 const service=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const publicKey='sb_publishable_JNcWc4KR76hOSqe9mvs9Tw_Vu4XOicE';
@@ -35,7 +34,7 @@ Deno.serve(async req=>{
   try{
    const verified=await jwtVerify(String(input.token||''),githubKeys,{issuer:'https://token.actions.githubusercontent.com',audience:'fasttrip-daro-weather'});
    const p=verified.payload;
-   if(p.repository_id!=='1424037247'||p.sub!=='repo:Ricardo45530/fast-trip:ref:refs/heads/main'||p.workflow_ref!=='Ricardo45530/fast-trip/.github/workflows/daro-weather-audio.yml@refs/heads/main'){console.error('DARO publisher identity mismatch',JSON.stringify({repository_id:p.repository_id,sub:p.sub,workflow_ref:p.workflow_ref}));return reply(403,{message:'Publicación no autorizada'});}
+   if(p.repository_id!=='1424037247'||p.sub!=='repo:Ricardo45530@344210317/fast-trip@1424037247:ref:refs/heads/main'||p.workflow_ref!=='Ricardo45530/fast-trip/.github/workflows/daro-weather-audio.yml@refs/heads/main'){console.error('DARO publisher identity mismatch',JSON.stringify({repository_id:p.repository_id,sub:p.sub,workflow_ref:p.workflow_ref}));return reply(403,{message:'Publicación no autorizada'});}
    if(typeof input.audio_base64!=='string'||input.audio_base64.length<1000||input.audio_base64.length>1000000||!/^[A-Za-z0-9+/]+={0,2}$/.test(input.audio_base64))return reply(400,{message:'Audio inválido'});
    const cached=await service.from('daro_weather_cache').select('data').eq('key','guayaquil').single();
    if(cached.error||cached.data.data.text!==input.text)return reply(409,{message:'El pronóstico cambió; vuelve a generarlo'});
