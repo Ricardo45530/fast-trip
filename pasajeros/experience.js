@@ -42,12 +42,13 @@ const passengerExperience=(()=>{
  for(const photo of catalog){
   const p=document.createElement('p'),source=document.createElement('a'),license=document.createElement('a');
   source.href=photo.source;source.textContent=photo.label+' — '+photo.author;source.target='_blank';source.rel='noopener noreferrer';
-  license.href=photo.licenseUrl;license.textContent=photo.license;license.target='_blank';license.rel='noopener noreferrer';
+  license.href=photo.licenseUrl||photo.source;license.textContent=photo.license;license.target='_blank';license.rel='noopener noreferrer';
   p.append(source,document.createTextNode(' · '),license,document.createTextNode(' · Tamaño y compresión adaptados para la app.'));credits.append(p);
  }
  nextLandscape();
  return {
   sessionUser:null,nextLandscape,
+  termsReceipt:()=>parse('fasttrip.passenger.terms',{}),
   hasAcceptedTerms:()=>parse('fasttrip.passenger.terms',{}).version===VERSION,
   acceptTerms:()=>{write('fasttrip.passenger.terms',JSON.stringify({version:VERSION,acceptedAt:new Date().toISOString()}));write('fasttrip.passenger.returning','yes');},
   markReturning:()=>write('fasttrip.passenger.returning','yes'),

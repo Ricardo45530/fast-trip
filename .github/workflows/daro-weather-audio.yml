@@ -1,0 +1,30 @@
+name: DARO - Actualizar voz del pronóstico
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/update-daro-weather-voice.py'
+      - '.github/workflows/daro-weather-audio.yml'
+      - 'supabase/functions/daro-weather/**'
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: daro-weather-audio
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preparar síntesis de voz
+        run: python -m pip install edge-tts==7.3.1
+      - name: Actualizar boletín con la voz aprobada de DARO
+        run: python scripts/update-daro-weather-voice.py

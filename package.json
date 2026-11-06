@@ -1,0 +1,1 @@
+{"name":"fast-trip-apps","private":true,"type":"module","scripts":{"test":"node tests/review-passenger-registration.mjs && node tests/passenger-flow.cjs"},"devDependencies":{"linkedom":"0.18.12"}}

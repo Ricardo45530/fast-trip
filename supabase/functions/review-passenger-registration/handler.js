@@ -31,6 +31,7 @@ export function registrationReviewHandler(service) {
         if (rejected.error) throw rejected.error;
         return rejected.data ? reply(200,'Solicitud rechazada.',{decision}) : reply(409,'La solicitud ya fue revisada.');
       }
+      if (!registration.selfie_data_url || !registration.photo_approved_at || !registration.terms_accepted_at) return reply(409,'Falta la selfie aprobada o la aceptación de términos. Pide al pasajero que complete el registro.');
       const email = registration.email.trim().toLowerCase();
       let account = null;
       for (let page = 1; ; page++) {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {registrationReviewHandler} from '../supabase/functions/review-passenger-registration/handler.js';
 const id='11111111-1111-4111-8111-111111111111';
 function setup(options={}){
- const rows={profiles:[{id:'admin',role:'admin',status:'approved'},...(options.profile?[options.profile]:[])],passenger_registration_requests:[{id,email:'passenger@example.invalid',full_name:'Test passenger',phone:'0990000000',address:'Test address',national_id:'0000000000',status:'pending'}]};
+ const rows={profiles:[{id:'admin',role:'admin',status:'approved'},...(options.profile?[options.profile]:[])],passenger_registration_requests:[{id,email:'passenger@example.invalid',full_name:'Test passenger',phone:'0990000000',address:'Test address',national_id:'0000000000',status:'pending',selfie_data_url:'data:image/jpeg;base64,/9j/test',photo_approved_at:'2026-11-05T23:00:00Z',terms_accepted_at:'2026-11-05T23:00:00Z'}]};
  const calls={invites:0};
  const service={auth:{getUser:async()=>({data:{user:{id:options.actor||'admin'}}}),admin:{listUsers:async()=>({data:{users:options.account?[options.account]:[]}}),inviteUserByEmail:async()=>{calls.invites++;return {data:{user:{id:'passenger',email:'passenger@example.invalid'}}};}}},from(table){
   let op='select',value,filters=[];
