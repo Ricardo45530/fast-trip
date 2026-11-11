@@ -1,10 +1,12 @@
 // FAST TRIP: signed inbound WhatsApp messages and deterministic DARO replies.
 export function replyFor(text) {
-  const value = String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (/conductor/.test(value)) return "Soy DARO, de FAST TRIP. Para solicitar tu registro como conductor, envía tu nombre completo y teléfono. La aprobación corresponde a Administración. Tu vehículo debe ser modelo 2022 en adelante. Te indicaremos los documentos y coordinaremos la cita.";
-  if (/pasajero/.test(value)) return "Soy DARO, de FAST TRIP. Para solicitar tu registro como pasajero, indícanos tu nombre completo. Administración revisará tu solicitud y te indicará cómo completar el registro. Recibirás el enlace de instalación después de la aprobación.";
-  if (/reclamo|sugerencia/.test(value)) return "Soy DARO, de FAST TRIP. Escribe tu sugerencia o reclamo y la fecha del servicio. Tu mensaje quedará registrado para revisión de Administración.";
-  return "Hola, soy DARO, la central de FAST TRIP. Lo hacemos diferente.\n¿En qué podemos ayudarte?\n• Registrarme como pasajero\n• Registrarme como conductor\n• Solicitar un traslado\n• Sugerencias y reclamos\nEscribe la opción que necesitas. Atendemos Guayaquil y alrededores.";
+  const value = String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const option = value.match(/^(?:opcion\s*)?([1-4])\s*[.)]?$/)?.[1];
+  if (option === "2" || /conductor/.test(value)) return "Soy DARO, de FAST TRIP. Para solicitar tu registro como conductor, envía tu nombre completo y teléfono. La aprobación corresponde a Administración. Tu vehículo debe ser modelo 2022 en adelante. Te indicaremos los documentos y coordinaremos la cita.";
+  if (option === "1" || /pasajero/.test(value)) return "Soy DARO, de FAST TRIP. Para solicitar tu registro como pasajero, indícanos tu nombre completo. Administración revisará tu solicitud y te indicará cómo completar el registro. Recibirás el enlace de instalación después de la aprobación.";
+  if (option === "3" || /traslado|solicitar (?:un )?viaje/.test(value)) return "Soy DARO, de FAST TRIP. Para solicitar un traslado, envía:\n• Dirección de recogida\n• Destino\n• Fecha y hora\n• Número de pasajeros\nAdministración revisará la disponibilidad y confirmará el servicio. Esta respuesta todavía no confirma una reserva.";
+  if (option === "4" || /reclamo|sugerencia/.test(value)) return "Soy DARO, de FAST TRIP. Escribe tu sugerencia o reclamo y la fecha del servicio. Tu mensaje quedará registrado para revisión de Administración.";
+  return "Hola, soy DARO, la central de FAST TRIP. Lo hacemos diferente.\n¿En qué podemos ayudarte?\n\nOpción 1: Registrarme como pasajero\nOpción 2: Registrarme como conductor\nOpción 3: Solicitar un traslado\nOpción 4: Sugerencias y reclamos\n\nResponde con el número de la opción: 1, 2, 3 o 4.\nAtendemos Guayaquil y alrededores.";
 }
 export function createHandler(env, fetcher = fetch) {
   return async (req) => {
