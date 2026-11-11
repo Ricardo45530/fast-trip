@@ -3,8 +3,8 @@ import {registrationReviewHandler} from '../supabase/functions/review-passenger-
 const id='11111111-1111-4111-8111-111111111111';
 function setup(options={}){
  const rows={profiles:[{id:'admin',role:'admin',status:'approved'},...(options.profile?[options.profile]:[])],passenger_registration_requests:[{id,email:'passenger@example.invalid',full_name:'Test passenger',phone:'0990000000',address:'Test address',national_id:'0000000000',status:'pending',selfie_data_url:'data:image/jpeg;base64,/9j/test',photo_approved_at:'2026-11-05T23:00:00Z',terms_accepted_at:'2026-11-05T23:00:00Z'}]};
- const calls={invites:0};
- const service={auth:{getUser:async()=>({data:{user:{id:options.actor||'admin'}}}),admin:{listUsers:async()=>({data:{users:options.account?[options.account]:[]}}),inviteUserByEmail:async()=>{calls.invites++;return {data:{user:{id:'passenger',email:'passenger@example.invalid'}}};}}},from(table){
+ Object.assign(rows.passenger_registration_requests[0],options.registration||{});const calls={invites:0,guardian:0};
+ const service={rpc:async()=>{calls.guardian++;return{data:true,error:null}},auth:{getUser:async()=>({data:{user:{id:options.actor||'admin'}}}),admin:{listUsers:async()=>({data:{users:options.account?[options.account]:[]}}),inviteUserByEmail:async()=>{calls.invites++;return {data:{user:{id:'passenger',email:'passenger@example.invalid'}}};}}},from(table){
   let op='select',value,filters=[];
   const execute=()=>{let data=rows[table].filter(r=>filters.every(([k,v])=>r[k]===v));if(op==='update')data.forEach(r=>Object.assign(r,value));if(op==='insert'){rows[table].push(value);data=[value];}return {data,error:null};};
   const q={select(){return q},eq(k,v){filters.push([k,v]);return q},update(v){op='update';value=v;return q},insert(v){op='insert';value=v;return q},async maybeSingle(){const r=execute();return {...r,data:r.data[0]||null}},then(resolve,reject){return Promise.resolve(execute()).then(resolve,reject)}};return q;
@@ -36,3 +36,9 @@ function req(body={request_id:id,decision:'approved'},token='valid'){return new 
  const t=setup({account:{id:'passenger',email:'passenger@example.invalid'},profile:{id:'passenger',role:'passenger',status:'suspended'}});assert.equal((await t.handle(req())).status,409);assert.equal(t.rows.profiles[1].status,'suspended');
 }
 console.log('8 review tests passed: authentication, authorization, input, role preservation, rejection, approval, retries and blocked accounts. No emails sent.');
+
+const teen={registration_kind:'adolescent',guardian_name:'Representante Sintético',guardian_phone:'593990000001',guardian_relationship:'mother',guardian_registration_accepted_at:'2026-11-11T00:00:00Z'};
+{const t=setup({registration:teen});assert.equal((await t.handle(req())).status,409);assert.equal(t.calls.invites,0);assert.equal(t.calls.guardian,0);}
+{const t=setup({registration:teen});assert.equal((await t.handle(req({request_id:id,decision:'approved',guardian_verified:true}))).status,200);assert.equal(t.calls.guardian,1);}
+{const t=setup({registration:{...teen,guardian_registration_accepted_at:null}});assert.equal((await t.handle(req({request_id:id,decision:'approved',guardian_verified:true}))).status,409);assert.equal(t.calls.invites,0);}
+console.log('3 adolescent review tests passed: administrative verification and representative consent required.');

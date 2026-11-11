@@ -20,6 +20,11 @@ const passengerFlow=(()=>{
  }
  el('takePhoto').onclick=takePhoto;
  el('approvePhoto').onclick=()=>{if(!selfie)return;photoConsent=new Date().toISOString();el('approvePhoto').setAttribute('aria-pressed','true');el('approvePhoto').textContent='Foto aprobada para enviar ✓';el('approvePhoto').disabled=true;el('registrationSubmit').disabled=false;message('selfieStatus','Foto aprobada. Se adjuntará cuando envíes tu solicitud.');};
+ const registrationKind=el('registrationKind');
+ registrationKind.onchange=()=>{
+  const teen=registrationKind.value==='adolescent';el('guardianRegistration').classList.toggle('hidden',!teen);
+  for(const id of ['guardianName','guardianPhone','guardianRegistrationConsent'])el(id).required=teen;
+ };
  async function submitRegistration(event){
   event.preventDefault();const form=event.currentTarget;if(!client)return message('registrationMessage','No se pudo conectar. Intenta nuevamente.');
   if(!selfie||!photoConsent)return message('registrationMessage','Toma tu selfie y aprueba su envío antes de continuar.');
@@ -28,14 +33,21 @@ const passengerFlow=(()=>{
   try{
    const f=new FormData(form),payload={};for(const k of ['full_name','national_id','phone','email','address'])payload[k]=String(f.get(k)||'').trim();
    if(payload.full_name.split(/\s+/).length<2)throw new Error('Escribe tus nombres y apellidos completos.');
-   phone(payload.phone);payload.email=payload.email.toLowerCase();payload.city='Guayaquil';payload.selfie_data_url=selfie;payload.terms_version=consent.version;payload.terms_accepted_at=consent.acceptedAt;payload.photo_approved_at=photoConsent;
+   payload.phone=phone(payload.phone);payload.registration_kind=el('registrationKind').value;
+   if(payload.registration_kind==='adolescent'){
+    payload.guardian_name=el('guardianName').value.trim();payload.guardian_phone=phone(el('guardianPhone').value);payload.guardian_relationship=el('guardianRelationship').value;
+    if(payload.guardian_name.split(/\s+/).length<2||!el('guardianRegistrationConsent').checked)throw new Error('El representante debe completar sus datos y aceptar gestionar el registro.');
+    if(payload.guardian_phone===payload.phone)throw new Error('Registra el WhatsApp del representante y el teléfono del adolescente por separado.');
+    payload.guardian_registration_accepted_at=new Date().toISOString();
+   }
+   payload.email=payload.email.toLowerCase();payload.city='Guayaquil';payload.selfie_data_url=selfie;payload.terms_version=consent.version;payload.terms_accepted_at=consent.acceptedAt;payload.photo_approved_at=photoConsent;
    // Retry the same in-memory submission with the same key, rather than creating duplicates.
    const signature=JSON.stringify(payload);if(submitRegistration.signature!==signature){submitRegistration.key=crypto.randomUUID();submitRegistration.signature=signature;}payload.request_key=submitRegistration.key;
    const submissionClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'fasttrip.registration.anon',persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
    const result=await submissionClient.from('passenger_registration_requests').insert(payload);
    if(result.error&&result.error.code!=='23505')throw result.error;
-   form.reset();selfie='';photoConsent=null;stopCamera();el('selfiePreview').removeAttribute('src');el('selfiePreview').classList.add('hidden');el('approvePhoto').classList.add('hidden');el('takePhoto').textContent='Tomar foto';
-   message('registrationMessage','Tu solicitud ha sido enviada a nuestra Administración para su revisión. Recibirás la información de acceso en tu correo cuando se apruebe.');
+   form.reset();registrationKind.onchange();selfie='';photoConsent=null;stopCamera();el('selfiePreview').removeAttribute('src');el('selfiePreview').classList.add('hidden');el('approvePhoto').classList.add('hidden');el('takePhoto').textContent='Tomar foto';
+   message('registrationMessage','Tu solicitud ha sido enviada a nuestra Administración para su revisión. Recibirás el correo de acceso después de la aprobación y se registrará un aviso por WhatsApp. El registro del adolescente requiere verificar también al representante.');
    submitRegistration.signature=null;submitRegistration.key=null;
   }catch(e){message('registrationMessage',e.code?errorText(e):(e.message||errorText(e)));}finally{btn.disabled=!photoConsent;}
  }
@@ -56,7 +68,9 @@ const passengerFlow=(()=>{
  el('contactsForm').onsubmit=async event=>{event.preventDefault();const b=event.currentTarget.querySelector('button');b.disabled=true;try{await savePreferences(contactPayload('editContact'));el('contactsDialog').close();}catch(e){message('contactsMessage',e.message||errorText(e));}finally{b.disabled=false;}};
  async function share(trip){
   const root=el('shareContacts');root.replaceChildren();
-  const detail=tripDetails.get(trip.id);let text='Estoy viajando con FAST TRIP. Recogida: '+trip.origin_text+'. Destino: '+trip.destination_text+'. Estado al compartir: '+(STATUS[trip.status]||trip.status)+'. Referencia: '+trip.id+'.';
+  const shareResult=await client.rpc('create_trip_share_link',{p_trip_id:trip.id});
+  if(shareResult.error||typeof shareResult.data!=='string')throw new Error('No se pudo crear el enlace de seguimiento. Intenta nuevamente.');
+  const detail=tripDetails.get(trip.id);let text='Seguimiento en tiempo real: '+shareResult.data+'\n'+'Estoy viajando con FAST TRIP. Recogida: '+trip.origin_text+'. Destino: '+trip.destination_text+'. Estado al compartir: '+(STATUS[trip.status]||trip.status)+'. Referencia: '+trip.id+'.';
   if(detail)text+=' Conductor: '+(detail.driver_name||'Por confirmar')+'. Unidad: '+(detail.unit_number||'Por confirmar')+'. Placa: '+(detail.plate||'Por confirmar')+'.';text+=' Central DARO: 0963171259.';
   for(let i=1;i<=3;i++){const n=preferences?.['contact_'+i+'_phone'];if(!n)continue;const a=document.createElement('a');a.className='outline';a.textContent='Compartir con '+(preferences['contact_'+i+'_name']||'Contacto '+i);a.href='https://wa.me/'+n+'?text='+encodeURIComponent(text);a.target='_blank';a.rel='noopener noreferrer';root.append(a);}
   if(!root.children.length){const p=document.createElement('p');p.textContent='Registra tus contactos de confianza en Mi cuenta.';root.append(p);}el('shareDialog').showModal();

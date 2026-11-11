@@ -7,6 +7,7 @@ const message=(id,text)=>$(id).textContent=text;
 const ACTIVE=['pending','offered','accepted','in_progress'];
 const STATUS={pending:'Buscando conductor',offered:'Esperando confirmación',accepted:'Conductor asignado',in_progress:'En camino a tu destino',completed:'Viaje completado',cancelled:'Viaje cancelado',rejected:'Solicitud rechazada',no_driver:'Sin conductor disponible'};
 const MONEY=new Intl.NumberFormat('es-EC',{style:'currency',currency:'USD'});
+let teenRequests=[];
 let client,currentUser=null,profile=null,recovering=false,trips=[],cancelRequests=[],loading=false,poll=null,pickup=null,action=null,lastRender='',activeScreen='welcome';
 function screen(id){if(id!=='registration')passengerFlow.stopCamera();if(id==='registration'&&!passengerExperience.hasAcceptedTerms())id='terms';activeScreen=id;for(const name of ['welcome','terms','access','registration','guide','daroWelcome','reset','tripPanel'])$(name).classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
 function tab(id){document.querySelectorAll('.tab-content').forEach(x=>x.classList.toggle('hidden',x.id!==id));document.querySelectorAll('[data-tab]').forEach(x=>{if(x.dataset.tab===id)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});}
@@ -32,22 +33,24 @@ async function loadTrips(){
  if(!currentUser||loading)return;loading=true;
  try{
  const uid=currentUser.id;
- const [t,c]=await Promise.all([
+ const [t,c,teen]=await Promise.all([
  client.from('trips').select('id,passenger_id,driver_id,origin_text,destination_text,service_type,status,created_at,total_amount,started_at,completed_at,arrived_at,estimated_arrival_at,eta_updated_at').eq('passenger_id',uid).order('created_at',{ascending:false}).limit(30),
- client.from('trip_cancellation_requests').select('id,trip_id,status,created_at').eq('requester_id',uid).order('created_at',{ascending:false}).limit(60)
+ client.from('trip_cancellation_requests').select('id,trip_id,status,created_at').eq('requester_id',uid).order('created_at',{ascending:false}).limit(60),
+ client.from('adolescent_trip_requests').select('id,origin_text,destination_text,status,authorization_expires_at').eq('passenger_id',uid).in('status',['awaiting_guardian','authorized']).gt('authorization_expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(5)
  ]);
  if(currentUser?.id!==uid)return;
  if(t.error)throw t.error;
- trips=t.data||[];cancelRequests=c.data||[];await passengerFlow.refreshEta(trips);if(await passengerFlow.processTrips(trips))return;
+ if(teen.error)throw teen.error;teenRequests=teen.data||[];trips=t.data||[];cancelRequests=c.data||[];await passengerFlow.refreshEta(trips);if(await passengerFlow.processTrips(trips))return;
  message('syncStatus',c.error?'Viajes actualizados. No se pudieron consultar las cancelaciones.':'Actualizado a las '+new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})+' · se actualiza cada 12 segundos');
- const signature=JSON.stringify([trips,cancelRequests]);if(signature!==lastRender){lastRender=signature;renderTrips();}
+ const signature=JSON.stringify([trips,cancelRequests,teenRequests]);if(signature!==lastRender){lastRender=signature;renderTrips();}
  const active=trips.some(x=>ACTIVE.includes(x.status));$('sendBtn').disabled=active;
  if(active)message('tripMessage','Ya tienes una solicitud activa. Consulta su estado en Mis viajes.');
  }catch(e){message('syncStatus',errorText(e)+' Se conserva la última información disponible.');}finally{loading=false;}
 }
 function renderTrips(){
  const root=$('tripHistory');root.replaceChildren();
- if(!trips.length){root.append(node('p','Tu próximo destino te espera. Aquí aparecerán tus viajes.','empty'));return;}
+ for(const request of teenRequests){const card=node('article',undefined,'card');card.append(node('h3','Solicitud de adolescente'),node('p',request.origin_text+' → '+request.destination_text),node('p',request.status==='authorized'?'Autorización recibida. Pendiente de verificación de Administración.':'Pendiente de autorización del representante por WhatsApp.'),node('p','Referencia: '+request.id,'fine'));root.append(card);}
+ if(!trips.length&&!teenRequests.length){root.append(node('p','Tu próximo destino te espera. Aquí aparecerán tus viajes.','empty'));return;}
  for(const t of trips){
  const card=node('article',undefined,'card trip-card');card.append(node('span',STATUS[t.status]||'Actualizando estado','badge'));
  const route=node('p',t.origin_text,'trip-route');route.append(node('span','↳ '+t.destination_text));card.append(route);
@@ -76,7 +79,7 @@ async function driverLocation(t,card){
  if(r.error||!r.data?.length){line.textContent='Aún no hay ubicación registrada para este viaje. Consulta con DARO.';return;}
  const p=r.data[0];const age=Date.now()-new Date(p.recorded_at).getTime();line.replaceChildren(node('span',(age>120000?'Último registro disponible · ':'Ubicación registrada · ')+new Date(p.recorded_at).toLocaleTimeString('es-EC')+' '));line.append(link('Ver en Google Maps ↗','https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.latitude+','+p.longitude)));
 }
-async function shareTrip(t,card){await passengerFlow.share(t);}
+async function shareTrip(t,card){try{await passengerFlow.share(t);}catch(e){message('syncStatus',e.message||errorText(e));}}
 function openAction(type,trip){
  action={type,trip};message('actionMessage','');$('actionText').value='';$('ratingField').classList.toggle('hidden',type!=='rating');$('actionText').required=type==='cancel';$('actionText').minLength=type==='cancel'?5:0;
  const copy={cancel:['Solicitar cancelación','Administración debe aprobar la solicitud. Mientras tanto, tu viaje permanece activo.','Motivo de cancelación','Solicitar aprobación'],panic:['¿Necesitas asistencia urgente?','La alerta se registra en Administración. Para atención inmediata, contacta también a DARO. En una emergencia real puedes llamar al ECU 911.','¿Qué sucede? (opcional)','Enviar alerta a Administración'],rating:['¿Cómo estuvo tu viaje?','Tu calificación individual y comentario los revisa Administración.','Comentario (opcional)','Enviar calificación']}[type];
@@ -113,6 +116,8 @@ $('tripForm').onsubmit=async e=>{
  const destinationPoint=passengerFlow.tripDestination();if(!destinationPoint){message('tripMessage','Confirma la ubicación del destino antes de solicitar el viaje.');return;}
  const payload={destination_lat:destinationPoint.lat,destination_lng:destinationPoint.lng,passenger_id:uid,origin_text:origin,destination_text:destination,service_type:$('service').value,notes:$('notes').value.trim()||null,status:'pending'};
  if(pickup){payload.pickup_lat=pickup.lat;payload.pickup_lng=pickup.lng;}
+ const guardian=await client.rpc('passenger_guardian_status');if(guardian.error)throw guardian.error;
+ if(guardian.data?.is_adolescent){const r=await client.rpc('request_adolescent_trip',{p_origin:origin,p_destination:destination,p_service:payload.service_type,p_destination_lat:destinationPoint.lat,p_destination_lng:destinationPoint.lng,p_pickup_lat:pickup?.lat??null,p_pickup_lng:pickup?.lng??null});if(r.error)throw r.error;message('tripMessage','Solicitud registrada. Tu representante debe autorizar este viaje por WhatsApp y Administración debe verificarlo antes de buscar conductor.');await loadTrips();tab('history');return;}
  const r=await client.from('trips').insert(payload);if(r.error)throw r.error;passengerExperience.nextLandscape();
  $('tripForm').reset();passengerFlow.clearDestination();pickup=null;message('locationStatus','');message('tripMessage','Solicitud enviada. Espera la confirmación de un conductor.');await loadTrips();tab('history');
  }catch(err){message('tripMessage',errorText(err));}finally{btn.disabled=trips.some(t=>ACTIVE.includes(t.status));}

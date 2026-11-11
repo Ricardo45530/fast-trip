@@ -32,6 +32,7 @@ export function registrationReviewHandler(service) {
         return rejected.data ? reply(200,'Solicitud rechazada.',{decision}) : reply(409,'La solicitud ya fue revisada.');
       }
       if (!registration.selfie_data_url || !registration.photo_approved_at || !registration.terms_accepted_at) return reply(409,'Falta la selfie aprobada o la aceptación de términos. Pide al pasajero que complete el registro.');
+      if(registration.registration_kind==='adolescent' && (input.guardian_verified!==true || !registration.guardian_registration_accepted_at || !registration.guardian_name || !/^[1-9][0-9]{7,14}$/.test(registration.guardian_phone||'') || !['father','mother','guardian'].includes(registration.guardian_relationship))) return reply(409,'Verifica la identidad y representación del padre, madre o representante y los teléfonos de ambos antes de aprobar.');
       const email = registration.email.trim().toLowerCase();
       let account = null;
       for (let page = 1; ; page++) {
@@ -58,6 +59,10 @@ export function registrationReviewHandler(service) {
       if (!existing.data) {
         const created = await service.from('profiles').insert({id:account.id,role:'passenger',status:'pending',full_name:registration.full_name,phone:registration.phone,address:registration.address,national_id:registration.national_id});
         if (created.error) throw created.error;
+      }
+      if(registration.registration_kind==='adolescent') {
+        const guardian=await service.rpc('set_verified_passenger_guardian',{p_passenger_id:account.id,p_registration_id:request_id,p_reviewer:reviewer});
+        if(guardian.error||guardian.data!==true) return reply(409,'No se pudo registrar al representante verificado. La cuenta no se habilitará por esta operación.');
       }
       if (existing.data?.status !== 'approved') {
         const approved = await service.from('profiles').update({status:'approved'}).eq('id',account.id).eq('role','passenger').eq('status','pending').select('id').maybeSingle();

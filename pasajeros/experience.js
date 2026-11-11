@@ -1,6 +1,6 @@
 'use strict';
 const passengerExperience=(()=>{
- const VERSION='2026-11-05';
+ const VERSION='2026-11-11';
  const memory=new Map();
  const read=key=>{try{return localStorage.getItem(key);}catch{return memory.get(key);}};
  const write=(key,value)=>{memory.set(key,value);try{localStorage.setItem(key,value);}catch{}};
