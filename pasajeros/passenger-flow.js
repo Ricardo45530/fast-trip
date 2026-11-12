@@ -2,17 +2,29 @@
 const passengerFlow=(()=>{
  const el=id=>document.getElementById(id);
  let stream=null,selfie='',photoConsent=null,preferences=null,preferencesUser=null,sessionStarted=0,expiryTimer=null,latestNotice=null,weather=null,weatherLoaded=0,weatherAudioUrl=null,destinationPoint=null; 
+ let screenLightEnabled=true,capturing=false;
+ const screenLight=document.createElement('div');screenLight.id='selfieScreenLight';screenLight.hidden=true;screenLight.setAttribute('aria-hidden','true');screenLight.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;pointer-events:none';document.body.append(screenLight);
+ const lightToggle=document.createElement('button');lightToggle.id='selfieLightToggle';lightToggle.type='button';lightToggle.className='outline';lightToggle.textContent='Luz para selfie: activada';lightToggle.setAttribute('aria-pressed','true');el('takePhoto').after(lightToggle);
+ lightToggle.onclick=()=>{screenLightEnabled=!screenLightEnabled;lightToggle.setAttribute('aria-pressed',String(screenLightEnabled));lightToggle.textContent='Luz para selfie: '+(screenLightEnabled?'activada':'desactivada');};
  const playedAudio=new Audio();
  const storage={get(key,fallback=null){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch{}}};
  const phone=value=>{let n=String(value||'').replace(/[\s()+.-]/g,'');if(/^09\d{8}$/.test(n))n='593'+n.slice(1);if(!/^[1-9]\d{7,14}$/.test(n))throw new Error('Revisa los números. Usa 09xxxxxxxx para Ecuador o el código de país para otros destinos.');return n;};
- function stopCamera(){if(stream)for(const track of stream.getTracks())track.stop();stream=null;el('selfieCamera').srcObject=null;el('selfieCamera').classList.add('hidden');}
+ function stopCamera(){screenLight.hidden=true;if(stream)for(const track of stream.getTracks())track.stop();stream=null;el('selfieCamera').srcObject=null;el('selfieCamera').classList.add('hidden');}
  async function takePhoto(){
+  if(capturing)return;
   if(stream){
    const video=el('selfieCamera');if(!video.videoWidth){message('selfieStatus','La cámara todavía se está preparando. Intenta capturar de nuevo.');return;}
+   capturing=true;el('takePhoto').disabled=true;lightToggle.disabled=true;const captureStream=stream;
+   try{
+   if(screenLightEnabled){screenLight.hidden=false;message('selfieStatus','Iluminando el rostro…');await new Promise(resolve=>setTimeout(resolve,450));}
+   if(stream!==captureStream||!video.videoWidth)return;
    const canvas=document.createElement('canvas'),scale=Math.min(1,720/Math.max(video.videoWidth,video.videoHeight));canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
    let quality=.85;do{selfie=canvas.toDataURL('image/jpeg',quality);quality-=.1;}while(selfie.length>200000&&quality>.3);
    stopCamera();if(selfie.length>200000){selfie='';message('selfieStatus','La foto es demasiado grande. Vuelve a tomarla.');return;}
    photoConsent=null;el('selfiePreview').src=selfie;el('selfiePreview').classList.remove('hidden');el('approvePhoto').classList.remove('hidden');el('approvePhoto').disabled=false;el('approvePhoto').setAttribute('aria-pressed','false');el('approvePhoto').textContent='¿Apruebas enviar esta foto?';el('takePhoto').textContent='Volver a tomar foto';el('registrationSubmit').disabled=true;message('selfieStatus','Revisa la selfie. Todavía no se ha enviado.');return;
+   }catch(e){selfie='';photoConsent=null;stopCamera();el('registrationSubmit').disabled=true;message('selfieStatus','No se pudo capturar la selfie. Vuelve a tomarla.');}
+   finally{screenLight.hidden=true;capturing=false;el('takePhoto').disabled=false;lightToggle.disabled=false;}
+   return;
   }
   if(!navigator.mediaDevices?.getUserMedia){message('selfieStatus','Esta versión no permite abrir la cámara. Actualiza la app o abre el registro en tu navegador.');el('cameraBrowserFallback').classList.remove('hidden');return;}
   el('takePhoto').disabled=true;message('selfieStatus','Solicitando acceso a la cámara frontal…');
