@@ -21,7 +21,7 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
- private static final String HOME="https://ricardo45530.github.io/fast-trip/pasajeros/";
+ private static final String HOME="https://ricardo45530.github.io/fast-trip/pasajeros/?app=1.0.6";
  private WebView web;
  private GeolocationPermissions.Callback locationCallback;
  private String locationOrigin;
