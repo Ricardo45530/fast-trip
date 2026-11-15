@@ -1,0 +1,52 @@
+name: FAST TRIP - Capturas reales Android para Play
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/android-store-screenshots.yml'
+      - 'android/**/src/androidTest/**'
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [conductor, pasajeros]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.app == 'pasajeros' && '8.11.1' || '8.9' }}
+      - name: Habilitar aceleración del emulador
+        run: |
+          sudo chmod a+rw /dev/kvm
+      - name: Capturar pantallas de las apps sin datos personales
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -skin 1080x1920
+          working-directory: android/${{ matrix.app }}
+          script: |
+            adb shell wm size 1080x1920
+            adb shell wm density 420
+            gradle --no-daemon connectedDebugAndroidTest
+            mkdir -p store-screenshots
+            adb pull /sdcard/Android/data/com.fasttrip.${{ matrix.app }}/files/store-screenshots/. store-screenshots/
+      - name: Guardar capturas reales y resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fasttrip-${{ matrix.app }}-capturas-android
+          path: |
+            android/${{ matrix.app }}/store-screenshots/*.png
+            android/${{ matrix.app }}/app/build/reports/androidTests/
+          if-no-files-found: warn
