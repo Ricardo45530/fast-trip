@@ -46,14 +46,11 @@ public class StoreScreenshotsTest {
  }
  private void capture(String name) throws Exception {
   instrumentation.waitForIdleSync();SystemClock.sleep(1200);
-  Bitmap bitmap=instrumentation.getUiAutomation().takeScreenshot();assertNotNull(bitmap);
   String exportDir="/data/local/tmp/fasttrip-store-"+instrumentation.getTargetContext().getPackageName();
-  ParcelFileDescriptor[] pipe=instrumentation.getUiAutomation().executeShellCommandRw("mkdir -p "+exportDir+" && cat > "+exportDir+"/"+name+".png && echo SAVED");
-  try(ParcelFileDescriptor.AutoCloseOutputStream output=new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,output));}
-  bitmap.recycle();
+  ParcelFileDescriptor pipe=instrumentation.getUiAutomation().executeShellCommand("mkdir -p "+exportDir+" && screencap -p "+exportDir+"/"+name+".png && test -s "+exportDir+"/"+name+".png && echo SAVED");
   java.io.ByteArrayOutputStream result=new java.io.ByteArrayOutputStream();
-  try(ParcelFileDescriptor.AutoCloseInputStream input=new ParcelFileDescriptor.AutoCloseInputStream(pipe[0])){byte[] buffer=new byte[1024];int count;while((count=input.read(buffer))!=-1)result.write(buffer,0,count);}
-  assertTrue("Screenshot export failed",result.toString("UTF-8").contains("SAVED"));
+  try(ParcelFileDescriptor.AutoCloseInputStream input=new ParcelFileDescriptor.AutoCloseInputStream(pipe)){byte[] buffer=new byte[1024];int count;while((count=input.read(buffer))!=-1)result.write(buffer,0,count);}
+  assertTrue("Screenshot export failed: "+result.toString("UTF-8"),result.toString("UTF-8").contains("SAVED"));
  }
  @Test public void capturePublicScreens() throws Exception {
   instrumentation=InstrumentationRegistry.getInstrumentation();
