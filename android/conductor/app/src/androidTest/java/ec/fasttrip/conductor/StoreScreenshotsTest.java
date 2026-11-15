@@ -36,7 +36,7 @@ public class StoreScreenshotsTest {
  private String js(String expression) throws Exception {
   CountDownLatch latch=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>();
   instrumentation.runOnMainSync(()->web.evaluateJavascript(expression,value->{result.set(value);latch.countDown();}));
-  assertTrue("JavaScript callback",latch.await(10,TimeUnit.registerS));return result.get();
+  assertTrue("JavaScript callback",latch.await(10,TimeUnit.SECONDS));return result.get();
  }
  private void waitFor(String expression) throws Exception {
   for(int i=0;i<120;i++){if("true".equals(js(expression)))return;SystemClock.sleep(500);}
