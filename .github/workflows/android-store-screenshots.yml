@@ -40,7 +40,7 @@ jobs:
             adb shell wm density 420
             gradle --no-daemon connectedDebugAndroidTest
             mkdir -p store-screenshots
-            adb pull /sdcard/Android/data/com.fasttrip.${{ matrix.app }}/files/store-screenshots/. store-screenshots/
+            adb pull /sdcard/Download/fasttrip-store-com.fasttrip.${{ matrix.app }}/. store-screenshots/
       - name: Guardar capturas reales y resultados
         if: always()
         uses: actions/upload-artifact@v4
