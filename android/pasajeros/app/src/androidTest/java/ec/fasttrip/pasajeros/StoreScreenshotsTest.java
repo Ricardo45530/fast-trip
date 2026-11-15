@@ -47,12 +47,13 @@ public class StoreScreenshotsTest {
  private void capture(String name) throws Exception {
   instrumentation.waitForIdleSync();SystemClock.sleep(1200);
   Bitmap bitmap=instrumentation.getUiAutomation().takeScreenshot();assertNotNull(bitmap);
-  File directory=new File(instrumentation.getTargetContext().getExternalFilesDir(null),"store-screenshots");assertTrue(directory.isDirectory()||directory.mkdirs());
-  File screenshotFile=new File(directory,name+".png");
-  try(FileOutputStream out=new FileOutputStream(screenshotFile)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));}
+  String exportDir="/data/local/tmp/fasttrip-store-"+instrumentation.getTargetContext().getPackageName();
+  ParcelFileDescriptor[] pipe=instrumentation.getUiAutomation().executeShellCommandRw("mkdir -p "+exportDir+" && cat > "+exportDir+"/"+name+".png && echo SAVED");
+  try(ParcelFileDescriptor.AutoCloseOutputStream output=new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,output));}
   bitmap.recycle();
-  String exportDir="/sdcard/Download/fasttrip-store-"+instrumentation.getTargetContext().getPackageName();
-  try(ParcelFileDescriptor fd=instrumentation.getUiAutomation().executeShellCommand("mkdir -p "+exportDir+" && cp "+screenshotFile.getAbsolutePath()+" "+exportDir+"/");FileInputStream input=new FileInputStream(fd.getFileDescriptor())){byte[] buffer=new byte[1024];while(input.read(buffer)!=-1){}}
+  java.io.ByteArrayOutputStream result=new java.io.ByteArrayOutputStream();
+  try(ParcelFileDescriptor.AutoCloseInputStream input=new ParcelFileDescriptor.AutoCloseInputStream(pipe[0])){byte[] buffer=new byte[1024];int count;while((count=input.read(buffer))!=-1)result.write(buffer,0,count);}
+  assertTrue("Screenshot export failed",result.toString("UTF-8").contains("SAVED"));
  }
  @Test public void capturePublicScreens() throws Exception {
   instrumentation=InstrumentationRegistry.getInstrumentation();
