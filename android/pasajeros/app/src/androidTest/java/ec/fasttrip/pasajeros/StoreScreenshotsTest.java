@@ -54,11 +54,19 @@ public class StoreScreenshotsTest {
   return result.toString("UTF-8");
  }
  private void capture(String name) throws Exception {
-  instrumentation.waitForIdleSync();SystemClock.sleep(1200);
+  instrumentation.waitForIdleSync();
+  CountDownLatch drawn=new CountDownLatch(1);
+  instrumentation.runOnMainSync(()->web.postVisualStateCallback(SystemClock.uptimeMillis(),new WebView.VisualStateCallback(){
+   @Override public void onComplete(long requestId){web.invalidate();drawn.countDown();}
+  }));
+  assertTrue("WebView visual state",drawn.await(10,TimeUnit.SECONDS));
+  SystemClock.sleep(5000);
   String exportDir="/data/local/tmp/fasttrip-store-"+instrumentation.getTargetContext().getPackageName();
   // UiAutomation executes a command directly, without a shell to interpret &&.
   shell("mkdir -p "+exportDir);
   String path=exportDir+"/"+name+".png";
+  shell("screencap -p "+path);
+  SystemClock.sleep(1500);
   shell("screencap -p "+path);
   String size=shell("stat -c %s "+path).trim();
   assertTrue("Screenshot export failed; size="+size,size.matches("[0-9]+") && Long.parseLong(size)>1024);
