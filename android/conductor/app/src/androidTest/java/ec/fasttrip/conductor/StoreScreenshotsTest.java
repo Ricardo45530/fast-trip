@@ -44,13 +44,24 @@ public class StoreScreenshotsTest {
   for(int i=0;i<120;i++){if("true".equals(js(expression)))return;SystemClock.sleep(500);}
   fail("App screen did not become ready: "+expression);
  }
+ private String shell(String command) throws Exception {
+  ParcelFileDescriptor pipe=instrumentation.getUiAutomation().executeShellCommand(command);
+  java.io.ByteArrayOutputStream result=new java.io.ByteArrayOutputStream();
+  try(ParcelFileDescriptor.AutoCloseInputStream input=new ParcelFileDescriptor.AutoCloseInputStream(pipe)){
+   byte[] buffer=new byte[1024];int count;
+   while((count=input.read(buffer))!=-1)result.write(buffer,0,count);
+  }
+  return result.toString("UTF-8");
+ }
  private void capture(String name) throws Exception {
   instrumentation.waitForIdleSync();SystemClock.sleep(1200);
   String exportDir="/data/local/tmp/fasttrip-store-"+instrumentation.getTargetContext().getPackageName();
-  ParcelFileDescriptor pipe=instrumentation.getUiAutomation().executeShellCommand("mkdir -p "+exportDir+" && screencap -p "+exportDir+"/"+name+".png && test -s "+exportDir+"/"+name+".png && echo SAVED");
-  java.io.ByteArrayOutputStream result=new java.io.ByteArrayOutputStream();
-  try(ParcelFileDescriptor.AutoCloseInputStream input=new ParcelFileDescriptor.AutoCloseInputStream(pipe)){byte[] buffer=new byte[1024];int count;while((count=input.read(buffer))!=-1)result.write(buffer,0,count);}
-  assertTrue("Screenshot export failed: "+result.toString("UTF-8"),result.toString("UTF-8").contains("SAVED"));
+  // UiAutomation executes a command directly, without a shell to interpret &&.
+  shell("mkdir -p "+exportDir);
+  String path=exportDir+"/"+name+".png";
+  shell("screencap -p "+path);
+  String size=shell("stat -c %s "+path).trim();
+  assertTrue("Screenshot export failed; size="+size,size.matches("[0-9]+") && Long.parseLong(size)>1024);
  }
  @Test public void capturePublicScreens() throws Exception {
   instrumentation=InstrumentationRegistry.getInstrumentation();
