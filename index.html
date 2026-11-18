@@ -14,6 +14,12 @@
 .play-test-requests .entry{padding:12px 0}
 .play-test-requests .entry button:first-of-type{margin-left:0}
 .play-test-filter{max-width:260px}
+body:has(#adminPanel:not(.hidden)) .ft-ecuador-flag{position:absolute}
+.play-test-inline{text-align:left;border:1px solid #947438;background:#211b10;border-radius:10px;padding:15px;margin-bottom:18px}
+.play-test-inline h3{margin:0 0 8px}
+.play-test-inline fieldset{border:0;margin:0;padding:0;min-width:0}
+#regularPassengerApplications summary{cursor:pointer;padding:10px;color:#e5c16b;font-weight:bold;text-align:left}
+
 </style></head><body><div class="ft-ecuador-flag" role="img" aria-label="Bandera del Ecuador ondeando">🇪🇨</div>
 <img src="logo fast trip.jpeg" alt="FAST TRIP" style="display:block;width:100%;max-width:700px;margin:auto">
 <main><h1>FAST TRIP</h1><p class="note">LO HACEMOS DIFERENTE</p><div class="line"></div>
@@ -33,8 +39,18 @@
 <div id="playTestRequests" class="play-test-requests"></div>
 </fieldset>
 </div>
-<div id="section-pasajeros" class="panel hidden"><h3>Solicitudes de registro de pasajeros</h3><p id="passengerRequestCount" class="message" role="status"></p><button id="refreshPassengerRequests" type="button">Actualizar solicitudes</button><div id="listaSolicitudesPasajeros"></div><h3>Autorizaciones de adolescentes por viaje</h3><button id="refreshTeenRequests">Actualizar autorizaciones</button><div id="teenRequestsAdmin"></div><h3>Cuentas de pasajeros</h3><div id="listaPasajeros"></div></div>
-<div id="section-conductores" class="panel hidden"><h3>Conductores</h3><p class="note">La aprobación del perfil no sustituye la validación de pagos, documentos, selfie ni vehículo.</p><div id="listaConductores"></div></div>
+<div id="section-pasajeros" class="panel hidden"><section id="passengerPlayTest" class="play-test-inline hidden">
+<h3>Pasajeros de prueba</h3>
+<p class="note">Aquí aparecen las solicitudes enviadas desde la app de Pasajero con nombre y celular.</p>
+<p id="passengerPlayTestFeedback" class="message" role="status"></p>
+<fieldset id="passengerPlayTestActions" class="play-test-requests" aria-label="Solicitudes de pasajero de prueba"><button id="passengerPlayTestRefresh" class="secondary" type="button">Actualizar solicitudes de prueba</button><div id="passengerPlayTestRequests"></div></fieldset>
+</section><details id="regularPassengerApplications" open><summary>Solicitudes del servicio habitual</summary><p class="note">Estas solicitudes se enviaron por el registro habitual. Para participar en la prueba, el pasajero adulto puede enviar su nombre y celular desde la app.</p><h3>Solicitudes de registro de pasajeros</h3><p id="passengerRequestCount" class="message" role="status"></p><button id="refreshPassengerRequests" type="button">Actualizar solicitudes</button><div id="listaSolicitudesPasajeros"></div></details><h3>Autorizaciones de adolescentes por viaje</h3><button id="refreshTeenRequests">Actualizar autorizaciones</button><div id="teenRequestsAdmin"></div><h3>Cuentas de pasajeros</h3><div id="listaPasajeros"></div></div>
+<div id="section-conductores" class="panel hidden"><section id="driverPlayTest" class="play-test-inline hidden">
+<h3>Conductores de prueba</h3>
+<p class="note">Aquí aparecen las solicitudes enviadas desde la app de Conductor con nombre y celular.</p>
+<p id="driverPlayTestFeedback" class="message" role="status"></p>
+<fieldset id="driverPlayTestActions" class="play-test-requests" aria-label="Solicitudes de conductor de prueba"><button id="driverPlayTestRefresh" class="secondary" type="button">Actualizar solicitudes de prueba</button><div id="driverPlayTestRequests"></div></fieldset>
+</section><h3>Conductores</h3><p class="note">La aprobación del perfil no sustituye la validación de pagos, documentos, selfie ni vehículo.</p><div id="listaConductores"></div></div>
 <div id="section-vehiculos" class="panel hidden"><h3>Vehículos</h3><p class="note">Ingreso: máximo 4 años de antigüedad; retiro automático al cumplir 6 años, matrícula vigente, inspección aprobada y autorización del propietario cuando corresponda.</p><div id="listaVehiculos"></div></div>
 <div id="section-cambiosunidad" class="panel hidden"><h3>Solicitudes de cambio de unidad</h3><p class="note">Primero autoriza la actualización. Después revisa los nuevos datos y aprueba o rechaza. La aprobación documental NO reasigna automáticamente el número QRZ.</p><div id="listaCambiosUnidad"></div></div>
 <div id="section-reservasqrz" class="panel hidden"><h3>Códigos QRZ reservados</h3><p class="note">Después de dos años, solo Administración puede reincorporar al conductor original con su mismo QRZ, tras verificar la nueva unidad. El código nunca se asigna a terceros.</p><div id="listaReservasQRZ"></div></div>\n<div id="section-reservas" class="panel hidden"><h3>Reservas y viajes</h3><div id="listaReservas"></div></div>
@@ -96,18 +112,19 @@ async function renderPassengerRequests(){
   for(const request of data){
    const row=entry(root,[request.full_name,'Correo: '+request.email,'Teléfono: '+request.phone,'Cédula: '+request.national_id,'Dirección: '+request.address,'Recibida: '+new Date(request.created_at).toLocaleString('es-EC'),'Estado: Pendiente de revisión']);
    if(request.registration_kind==='adolescent')entry(row,['Registro de adolescente','Representante: '+request.guardian_name+' ('+request.guardian_relationship+')','WhatsApp del representante: '+request.guardian_phone,'El teléfono del pasajero corresponde al adolescente.']);
+   const approve=action(row,'Aceptar para el servicio habitual',()=>reviewPassengerRequest(request,'approved'));
+   approve.disabled=true;
    if(request.has_selfie){
-    const approve=action(row,'Aprobar y habilitar pasajero',()=>reviewPassengerRequest(request,'approved'));approve.disabled=true;
     action(row,'Ver selfie para revisar',async()=>{const result=await client.from('passenger_registration_requests').select('selfie_data_url').eq('id',request.id).single();if(result.error)throw result.error;if(!/^data:image\/jpeg;base64,\/9j\//.test(result.data?.selfie_data_url||''))throw new Error('La fotografía no está disponible.');let photo=row.querySelector('img');if(!photo){photo=document.createElement('img');photo.alt='Selfie aprobada por el solicitante';photo.style.cssText='display:block;width:180px;max-width:100%;border-radius:12px;margin:12px 0';row.append(photo);}photo.onload=()=>{approve.disabled=false;};photo.src=result.data.selfie_data_url;});
     const receipt=document.createElement('p');receipt.textContent='Foto autorizada: '+new Date(request.photo_approved_at).toLocaleString('es-EC')+' · Términos '+request.terms_version;row.append(receipt);
-   }else{const note=document.createElement('p');note.textContent='Falta la selfie con confirmación. El pasajero debe completar una nueva solicitud con fotografía antes de aprobar.';row.append(note);}
+   }else{const note=document.createElement('p');note.textContent='Para aceptar esta solicitud del servicio habitual se necesita una selfie confirmada.';row.append(note);}
    action(row,'Rechazar solicitud',()=>reviewPassengerRequest(request,'rejected'),true);
   }
  }catch(error){root.textContent='No se pudieron consultar las solicitudes: '+errorText(error);$('passengerRequestCount').textContent='No se pudo actualizar la lista.';}
 }
 async function renderTeenRequests(){const root=$('teenRequestsAdmin');try{const rows=await list('adolescent_trip_requests','id,passenger_id,origin_text,destination_text,teen_phone,guardian_phone,guardian_authorized,status,authorization_expires_at,authorization_message_id',100);root.replaceChildren();const active=rows.filter(r=>['awaiting_guardian','authorized'].includes(r.status)&&Date.parse(r.authorization_expires_at)>Date.now());if(!active.length)root.textContent='No hay autorizaciones pendientes.';for(const r of active){const row=entry(root,['Referencia: '+r.id,r.origin_text+' → '+r.destination_text,'Adolescente: '+r.teen_phone,'Representante: '+r.guardian_phone,r.guardian_authorized?'Autorización recibida por WhatsApp; verifica antes de confirmar.':'Sin autorización del representante.']);if(r.guardian_authorized&&r.authorization_message_id)action(row,'Verificar autorización y solicitar conductor',async()=>{if(!confirm('¿Verificaste la autorización del representante para ESTE origen y destino? Se enviará la solicitud a conductores.'))return;const result=await client.rpc('admin_confirm_adolescent_trip',{p_request_id:r.id});if(result.error)throw result.error;await renderTeenRequests();say('adminMessage','Autorización verificada. Viaje enviado a despacho.');});}}catch(e){root.textContent='No se pudo consultar autorizaciones: '+errorText(e);}}
  $('refreshTeenRequests').onclick=renderTeenRequests;
- $('refreshPassengerRequests').onclick=async()=>{await renderPassengerRequests();await renderTeenRequests();await renderProfiles('passenger');};
+ $('refreshPassengerRequests').onclick=async()=>{await refreshPlayTest();await renderPassengerRequests();await renderTeenRequests();await renderProfiles('passenger');};
 
 async function managePlayTest(actionName='list', participantId=null){
  const {data,error}=await client.rpc('manage_play_test',{p_action:actionName,p_user_id:participantId});
@@ -118,6 +135,24 @@ let playTestData=null,playTestSignature='',playTestRevision=0,playTestSaving=fal
 const PLAY_TEST_ROLES={passenger:'Pasajeros',driver:'Conductores'};
 const PLAY_TEST_STATUSES={pending:'Pendiente',approved:'Aceptada',rejected:'Rechazada',suspended:'Suspendida'};
 
+function appendPlayTestRequests(root,role,showAll){
+ const requests=playTestData.requests.filter(request=>request.role===role&&(showAll||request.status==='pending'));
+ requests.sort((a,b)=>Number(b.status==='pending')-Number(a.status==='pending'));
+ if(!requests.length){
+  const empty=document.createElement('p');
+  empty.textContent=showAll?'Todavía no hay solicitudes de prueba.':'No hay solicitudes pendientes.';
+  root.append(empty);
+ }
+ for(const request of requests){
+  const row=entry(root,[request.full_name,'Celular '+request.phone,PLAY_TEST_STATUSES[request.status]||request.status]);
+  if(playTestData.enabled&&['pending','suspended'].includes(request.status)){
+   const accept=action(row,'Aceptar',()=>savePlayTest('approve',request));
+   accept.setAttribute('aria-label','Aceptar solicitud de '+request.full_name);
+   const reject=action(row,'Rechazar',()=>savePlayTest('reject',request),true);
+   reject.setAttribute('aria-label','Rechazar solicitud de '+request.full_name);
+  }
+ }
+}
 function renderPlayTestRequests(){
  if(!playTestData)return;
  const root=$('playTestRequests');
@@ -127,32 +162,32 @@ function renderPlayTestRequests(){
   heading.className='play-test-role';
   heading.textContent=label;
   root.append(heading);
-  const showAll=$('playTestFilter').value==='all';
-  const requests=playTestData.requests.filter(request=>request.role===role&&(showAll||request.status==='pending'));
-  requests.sort((a,b)=>Number(b.status==='pending')-Number(a.status==='pending'));
-  if(!requests.length){
-   const empty=document.createElement('p');
-   empty.textContent=showAll?'Todavía no hay solicitudes.':'No hay solicitudes pendientes.';
-   root.append(empty);
-  }
-  for(const request of requests){
-   const row=entry(root,[request.full_name,'Celular '+request.phone,PLAY_TEST_STATUSES[request.status]||request.status]);
-   if(playTestData.enabled&&['pending','suspended'].includes(request.status)){
-    const accept=action(row,'Aceptar',()=>savePlayTest('approve',request));
-    accept.setAttribute('aria-label','Aceptar solicitud de '+request.full_name);
-    const reject=action(row,'Rechazar',()=>savePlayTest('reject',request),true);
-    reject.setAttribute('aria-label','Rechazar solicitud de '+request.full_name);
-   }
-  }
+  appendPlayTestRequests(root,role,$('playTestFilter').value==='all');
  }
 }
+function renderInlinePlayTestRequests(){
+ for(const role of Object.keys(PLAY_TEST_ROLES)){
+  const root=$(role+'PlayTestRequests');
+  root.replaceChildren();
+  $(role+'PlayTest').classList.toggle('hidden',!playTestData.enabled);
+  if(playTestData.enabled)appendPlayTestRequests(root,role,true);
+ }
+}
+function playTestFeedback(message){
+ for(const id of ['playTestFeedback','passengerPlayTestFeedback','driverPlayTestFeedback'])say(id,message);
+}
+function setPlayTestActionsDisabled(disabled){
+ for(const id of ['playTestActions','passengerPlayTestActions','driverPlayTestActions'])$(id).disabled=disabled;
+}
 $('playTestFilter').onchange=renderPlayTestRequests;
+for(const role of Object.keys(PLAY_TEST_ROLES))$(role+'PlayTestRefresh').onclick=()=>refreshPlayTest({announce:true});
 
 function renderPlayTest(data){
  const pending=data.requests.filter(request=>request.status==='pending').length;
  say('playTestBadge',pending?'('+pending+' pendientes)':'');
  const signature=JSON.stringify(data);
  if(signature===playTestSignature)return;
+ if(playTestData?.enabled!==data.enabled)$('regularPassengerApplications').open=!data.enabled;
  playTestData=data;
  playTestSignature=signature;
  const controls=$('playTestControls'),summary=$('playTestSummary');
@@ -176,6 +211,7 @@ function renderPlayTest(data){
   summary.append(card);
  }
  renderPlayTestRequests();
+ renderInlinePlayTestRequests();
 }
 
 async function refreshPlayTest({announce=false}={}){
@@ -185,16 +221,16 @@ async function refreshPlayTest({announce=false}={}){
   const data=await managePlayTest();
   if(revision===playTestRevision){
    renderPlayTest(data);
-   if(announce)say('playTestFeedback','Solicitudes actualizadas.');
+   if(announce)playTestFeedback('Solicitudes actualizadas.');
    else if($('playTestFeedback').dataset.refreshError){
-    say('playTestFeedback','');
+    playTestFeedback('');
     delete $('playTestFeedback').dataset.refreshError;
    }
   }
   return data;
  }catch(e){
-  if(revision===playTestRevision&&activeSection==='pruebas'){
-   say('playTestFeedback','No se pudieron consultar las solicitudes. '+errorText(e));
+  if(revision===playTestRevision&&['pruebas','pasajeros','conductores'].includes(activeSection)){
+   playTestFeedback('No se pudieron consultar las solicitudes. '+errorText(e));
    $('playTestFeedback').dataset.refreshError='true';
   }
   return playTestData;
@@ -204,20 +240,20 @@ async function savePlayTest(operation,request){
  if(playTestSaving)return;
  playTestSaving=true;
  const revision=++playTestRevision;
- $('playTestActions').disabled=true;
+ setPlayTestActionsDisabled(true);
  delete $('playTestFeedback').dataset.refreshError;
- say('playTestFeedback','Guardando cambio…');
+ playTestFeedback('Guardando cambio…');
  try{
   const data=await managePlayTest(operation,request?.id??null);
   if(revision!==playTestRevision)return;
   renderPlayTest(data);
   const messages={approve:'Solicitud aceptada. ',reject:'Solicitud rechazada. ',open:'Registro de pruebas abierto.',close:'Pruebas cerradas. Los requisitos habituales están activos.'};
-  say('playTestFeedback',messages[operation]+(request?.full_name??''));
+  playTestFeedback(messages[operation]+(request?.full_name??''));
  }catch(e){
-  if(revision===playTestRevision)say('playTestFeedback','No se pudo guardar el cambio. '+errorText(e));
+  if(revision===playTestRevision)playTestFeedback('No se pudo guardar el cambio. '+errorText(e));
  }finally{
   playTestSaving=false;
-  $('playTestActions').disabled=false;
+  setPlayTestActionsDisabled(false);
  }
 }
 
@@ -304,10 +340,10 @@ async function renderReservedQrzes(){
   }
  }catch(e){root.textContent=errorText(e);}
 }
-const renderers={pruebas:()=>refreshPlayTest(),sugerencias:renderSuggestions,pasajeros:async()=>{await renderPassengerRequests();await renderProfiles('passenger');},conductores:()=>renderProfiles('driver'),vehiculos:renderVehicles,cambiosunidad:renderVehicleChanges,reservasqrz:renderReservedQrzes,reservas:renderTrips,documentos:renderDocuments,pagos:renderPayments,mensajes:async()=>{},cancelaciones:()=>renderCancellations(),seguridad:renderSecurity};
+const renderers={pruebas:()=>refreshPlayTest(),sugerencias:renderSuggestions,pasajeros:async()=>Promise.all([refreshPlayTest(),renderPassengerRequests(),renderProfiles('passenger')]),conductores:async()=>Promise.all([refreshPlayTest(),renderProfiles('driver')]),vehiculos:renderVehicles,cambiosunidad:renderVehicleChanges,reservasqrz:renderReservedQrzes,reservas:renderTrips,documentos:renderDocuments,pagos:renderPayments,mensajes:async()=>{},cancelaciones:()=>renderCancellations(),seguridad:renderSecurity};
 async function section(name){if(!(await admin())){say('adminMessage','Acceso no autorizado.');return;}for(const s of Object.keys(renderers))hide('section-'+s);show('section-'+name);activeSection=name;for(const button of document.querySelectorAll('[data-section]')){if(button.dataset.section===name)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');}await renderers[name]();}
 function showAvailability(available){say('driverStatus','Estado: '+(available?'Conectado':'Desconectado'));$('btnConectar').disabled=available;$('btnDesconectar').disabled=!available;}
-async function updateAccess(){if(recoveryMode||!client)return;hide('recoveryPanel');hide('adminPanel');hide('driverPanel');const u=await user();if(!u){show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){show('adminPanel');startAdminPolling();if(!activeSection){const trial=await refreshPlayTest();if(!activeSection)await section(location.hash==='#pruebas'||trial?.enabled?'pruebas':'seguridad');}}else if(p.role==='driver'){show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
+async function updateAccess(){if(recoveryMode||!client)return;hide('recoveryPanel');hide('adminPanel');hide('driverPanel');const u=await user();if(!u){show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){show('adminPanel');startAdminPolling();if(!activeSection){const trial=await refreshPlayTest();const requestedSection=location.hash.slice(1);if(!activeSection)await section(['pruebas','pasajeros','conductores'].includes(requestedSection)?requestedSection:(trial?.enabled?'pruebas':'seguridad'));}}else if(p.role==='driver'){show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
 async function availability(value){if(!client)return;say('driverMessage','Actualizando...');$('btnConectar').disabled=true;$('btnDesconectar').disabled=true;try{const {data,error}=await client.rpc('set_driver_availability',{p_available:value});if(error)throw error;if(data!==true)throw new Error('No autorizado por servidor.');const u=await user();const {data:p,error:pe}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(pe||p?.role!=='driver'||p.status!=='approved')throw new Error('Perfil no habilitado.');showAvailability(p.is_available===true);say('driverMessage',p.is_available===value?'Disponibilidad actualizada.':'No se confirmó el cambio.');}catch(e){say('driverMessage',errorText(e));await updateAccess();}}
 async function signout(){if(client){const {error}=await client.auth.signOut();if(error){alert(error.message);return;}}stopAdminPolling();hide('adminPanel');hide('driverPanel');show('authPanel');say('loginMessage','Sesión cerrada.');}
 async function recoverAdminPassword(){const email=$('loginEmail').value.trim();if(!email){say('loginMessage','Escribe primero tu correo de administrador.');return;}say('loginMessage','Solicitando enlace de recuperación...');try{if(!client){if(!window.supabase)throw new Error('No se cargó el servicio de acceso. Actualiza la página.');client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL});if(error)throw error;say('loginMessage','Solicitud enviada. Revisa tu correo y la carpeta de spam.');}catch(e){say('loginMessage','No se pudo solicitar el enlace: '+errorText(e));}}
@@ -333,10 +369,14 @@ function stopAdminPolling(){
  playTestData=null;
  playTestSignature='';
  say('playTestBadge','');
- say('playTestFeedback','');
+ playTestFeedback('');
  $('playTestRequests').replaceChildren();
  $('playTestSummary').replaceChildren();
  $('playTestFilter').value='pending';
+ for(const role of Object.keys(PLAY_TEST_ROLES)){
+  hide(role+'PlayTest');
+  $(role+'PlayTestRequests').replaceChildren();
+ }
 }
 
 init().catch(e=>say('loginMessage','Error de inicio: '+errorText(e)));
