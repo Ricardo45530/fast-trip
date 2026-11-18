@@ -66,11 +66,11 @@ const passengerFlow=(()=>{
  function contactPayload(prefix){const result={},numbers=[];for(let i=1;i<=3;i++){result['contact_'+i+'_name']=el(prefix+i+'Name').value.trim();const n=phone(el(prefix+i+'Phone').value);if(numbers.includes(n))throw new Error('Registra tres números de contacto diferentes.');numbers.push(n);result['contact_'+i+'_phone']=n;}return result;}
  function fillContacts(prefix){for(let i=1;i<=3;i++){el(prefix+i+'Name').value=preferences?.['contact_'+i+'_name']||'';el(prefix+i+'Phone').value=preferences?.['contact_'+i+'_phone']||'';}}
  async function savePreferences(values){if(!currentUser)throw new Error('Vuelve a iniciar sesión.');const r=await client.from('passenger_preferences').upsert({user_id:currentUser.id,...values},{onConflict:'user_id'});if(r.error)throw r.error;preferences={...preferences,...values,user_id:currentUser.id};}
- async function afterApprovedLogin(){
+ async function afterApprovedLogin({skipGuide=false}={}){
   if(preferencesUser!==currentUser.id){const r=await client.from('passenger_preferences').select('*').eq('user_id',currentUser.id).maybeSingle();if(r.error)throw r.error;preferences=r.data||{};preferencesUser=currentUser.id;sessionStarted=storage.get('fasttrip.session.'+currentUser.id,0)||Date.parse(currentUser.last_sign_in_at)||Date.now();}
   updateMuteLabel();
-  if(!preferences.guide_accepted_at){fillContacts('guideContact');screen('guide');return false;}
-  if(!preferences.welcome_seen_at){screen('daroWelcome');el('daroWelcomeVideo').muted=!!preferences.voice_muted;return false;}
+  if(!skipGuide&&!preferences.guide_accepted_at){fillContacts('guideContact');screen('guide');return false;}
+  if(!skipGuide&&!preferences.welcome_seen_at){screen('daroWelcome');el('daroWelcomeVideo').muted=!!preferences.voice_muted;return false;}
   void loadWeather();return true;
  }
  el('guideForm').onsubmit=async event=>{event.preventDefault();const btn=el('guideSubmit');btn.disabled=true;try{if(!el('guideConsent').checked)throw new Error('Lee y acepta las indicaciones antes de continuar.');await savePreferences({...contactPayload('guideContact'),guide_accepted_at:new Date().toISOString()});screen('daroWelcome');el('daroWelcomeVideo').muted=!!preferences.voice_muted;}catch(e){message('guideMessage',e.message||errorText(e));}finally{btn.disabled=false;}};

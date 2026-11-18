@@ -50,7 +50,7 @@ Deno.serve(async (request) => {
     }
     const finished = await server.rpc("finish_play_test_enrollment", { p_key: key, p_user_id: user.id });
     if (finished.error || !finished.data) return respond(503, "No se pudo completar el registro. Vuelve a intentar.");
-    return respond(200, "Solicitud enviada a Administración.");
+    return respond(200, "Registro de prueba completado.");
   } catch {
     return respond(400, "No se pudo procesar la solicitud.");
   }

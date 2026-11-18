@@ -29,26 +29,22 @@ begin
     or not public.finish_play_test_enrollment(driver_key,test_driver)
     or not public.finish_play_test_enrollment(passenger_key,test_passenger)
   then raise exception 'Enrollment finalization or retry failed'; end if;
-  if (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='pending') <> 2
+  if (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='approved') <> 2
     or not fasttrip_internal.is_review_user(test_driver) or not fasttrip_internal.is_review_user(test_passenger)
-  then raise exception 'Enrollment must be pending and isolated'; end if;
+  then raise exception 'Enrollment must be approved immediately and isolated'; end if;
 
   perform set_config('request.jwt.claim.sub',test_driver::text,true);
   perform set_config('request.jwt.claims',jsonb_build_object('sub',test_driver,'role','authenticated')::text,true);
   execute 'set local role authenticated';
   denied := false;
   begin
-    perform public.manage_play_test('approve',test_driver);
+    perform public.manage_play_test('close');
   exception when insufficient_privilege or raise_exception then
     denied := true;
   end;
-  if not denied or public.set_driver_availability(true) then raise exception 'Tester bypassed approval'; end if;
+  if not denied then raise exception 'Tester accessed admin controls'; end if;
   execute 'reset role';
 
-  perform set_config('request.jwt.claim.sub',admin_id::text,true);
-  perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'role','authenticated')::text,true);
-  perform public.manage_play_test('approve',test_driver);
-  perform public.manage_play_test('approve',test_passenger);
   if not public.driver_has_active_payment(test_driver) or not exists (
     select 1 from public.vehicles where driver_id=test_driver and status='enabled' and unit_number='PRUEBA-' || driver_key::text
   ) then raise exception 'No test payment exemption or simulated vehicle'; end if;
@@ -73,8 +69,14 @@ begin
   if public.play_test_is_open() or public.driver_has_active_payment(test_driver)
     or (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='suspended' and not is_available) <> 2
     or public.reserve_play_test_enrollment(gen_random_uuid(),'driver','Cerrado temporal',test_phone)
+    or public.finish_play_test_enrollment(driver_key,test_driver)
   then raise exception 'Trial close did not restore regular registration and suspend trial permissions'; end if;
+  perform public.manage_play_test('open');
+  if not public.finish_play_test_enrollment(driver_key,test_driver)
+    or (select status from public.profiles where id=test_driver)<>'suspended'
+  then raise exception 'Retry reactivated a suspended tester'; end if;
+
 end;
 $test$;
-select 'PLAY_TEST_ENROLLMENT_OK' as result;
+select 'PLAY_TEST_DIRECT_ENTRY_OK' as result;
 rollback;

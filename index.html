@@ -13,7 +13,6 @@
 .play-test-role{margin:18px 0 5px}
 .play-test-requests .entry{padding:12px 0}
 .play-test-requests .entry button:first-of-type{margin-left:0}
-.play-test-filter{max-width:260px}
 body:has(#adminPanel:not(.hidden)) .ft-ecuador-flag{position:absolute}
 .play-test-inline{text-align:left;border:1px solid #947438;background:#211b10;border-radius:10px;padding:15px;margin-bottom:18px}
 .play-test-inline h3{margin:0 0 8px}
@@ -34,8 +33,6 @@ body:has(#adminPanel:not(.hidden)) .ft-ecuador-flag{position:absolute}
 <fieldset id="playTestActions" aria-label="Gestionar solicitudes de prueba">
 <div id="playTestControls"></div>
 <div id="playTestSummary" class="grid play-test-summary"></div>
-<label class="play-test-filter" for="playTestFilter">Mostrar solicitudes
-<select id="playTestFilter"><option value="pending">Pendientes</option><option value="all">Todas</option></select></label>
 <div id="playTestRequests" class="play-test-requests"></div>
 </fieldset>
 </div>
@@ -133,24 +130,18 @@ async function managePlayTest(actionName='list', participantId=null){
 }
 let playTestData=null,playTestSignature='',playTestRevision=0,playTestSaving=false;
 const PLAY_TEST_ROLES={passenger:'Pasajeros',driver:'Conductores'};
-const PLAY_TEST_STATUSES={pending:'Pendiente',approved:'Aceptada',rejected:'Rechazada',suspended:'Suspendida'};
+const PLAY_TEST_STATUSES={pending:'Pendiente',approved:'Habilitada',rejected:'Rechazada',suspended:'Suspendida'};
 
-function appendPlayTestRequests(root,role,showAll){
- const requests=playTestData.requests.filter(request=>request.role===role&&(showAll||request.status==='pending'));
+function appendPlayTestRequests(root,role){
+ const requests=playTestData.requests.filter(request=>request.role===role);
  requests.sort((a,b)=>Number(b.status==='pending')-Number(a.status==='pending'));
  if(!requests.length){
   const empty=document.createElement('p');
-  empty.textContent=showAll?'Todavía no hay solicitudes de prueba.':'No hay solicitudes pendientes.';
+  empty.textContent='Todavía no hay registros de prueba.';
   root.append(empty);
  }
  for(const request of requests){
-  const row=entry(root,[request.full_name,'Celular '+request.phone,PLAY_TEST_STATUSES[request.status]||request.status]);
-  if(playTestData.enabled&&['pending','suspended'].includes(request.status)){
-   const accept=action(row,'Aceptar',()=>savePlayTest('approve',request));
-   accept.setAttribute('aria-label','Aceptar solicitud de '+request.full_name);
-   const reject=action(row,'Rechazar',()=>savePlayTest('reject',request),true);
-   reject.setAttribute('aria-label','Rechazar solicitud de '+request.full_name);
-  }
+  entry(root,[request.full_name,'Celular '+request.phone,PLAY_TEST_STATUSES[request.status]||request.status]);
  }
 }
 function renderPlayTestRequests(){
@@ -162,7 +153,7 @@ function renderPlayTestRequests(){
   heading.className='play-test-role';
   heading.textContent=label;
   root.append(heading);
-  appendPlayTestRequests(root,role,$('playTestFilter').value==='all');
+  appendPlayTestRequests(root,role);
  }
 }
 function renderInlinePlayTestRequests(){
@@ -170,7 +161,7 @@ function renderInlinePlayTestRequests(){
   const root=$(role+'PlayTestRequests');
   root.replaceChildren();
   $(role+'PlayTest').classList.toggle('hidden',!playTestData.enabled);
-  if(playTestData.enabled)appendPlayTestRequests(root,role,true);
+  if(playTestData.enabled)appendPlayTestRequests(root,role);
  }
 }
 function playTestFeedback(message){
@@ -179,12 +170,11 @@ function playTestFeedback(message){
 function setPlayTestActionsDisabled(disabled){
  for(const id of ['playTestActions','passengerPlayTestActions','driverPlayTestActions'])$(id).disabled=disabled;
 }
-$('playTestFilter').onchange=renderPlayTestRequests;
 for(const role of Object.keys(PLAY_TEST_ROLES))$(role+'PlayTestRefresh').onclick=()=>refreshPlayTest({announce:true});
 
 function renderPlayTest(data){
- const pending=data.requests.filter(request=>request.status==='pending').length;
- say('playTestBadge',pending?'('+pending+' pendientes)':'');
+ const enabledCount=data.requests.filter(request=>request.status==='approved').length;
+ say('playTestBadge',enabledCount?'('+enabledCount+' con acceso)':'');
  const signature=JSON.stringify(data);
  if(signature===playTestSignature)return;
  if(playTestData?.enabled!==data.enabled)$('regularPassengerApplications').open=!data.enabled;
@@ -193,7 +183,7 @@ function renderPlayTest(data){
  const controls=$('playTestControls'),summary=$('playTestSummary');
  controls.replaceChildren();
  summary.replaceChildren();
- say('playTestAdminStatus',data.enabled?'Registro simplificado abierto. Los participantes se registran con nombre y celular.':'Registro simplificado cerrado. Está disponible el registro habitual.');
+ say('playTestAdminStatus',data.enabled?'Registro simplificado abierto. Los participantes entran directamente con nombre y celular.':'Registro simplificado cerrado. Está disponible el registro habitual.');
  action(controls,'Actualizar solicitudes',()=>refreshPlayTest({announce:true}));
  action(controls,data.enabled?'Cerrar pruebas y restaurar requisitos':'Abrir registro de pruebas',async()=>{
   if(data.enabled&&!confirm('¿Cerrar las pruebas? Se suspenderán las cuentas de prueba y volverán los requisitos habituales.'))return;
@@ -206,7 +196,7 @@ function renderPlayTest(data){
   const title=document.createElement('strong');
   title.textContent=label;
   const count=document.createElement('p');
-  count.textContent=requests.filter(request=>request.status==='pending').length+' pendientes · '+requests.filter(request=>request.status==='approved').length+' aceptadas';
+  count.textContent=requests.filter(request=>request.status==='approved').length+' con acceso';
   card.append(title,count);
   summary.append(card);
  }
@@ -236,7 +226,7 @@ async function refreshPlayTest({announce=false}={}){
   return playTestData;
  }
 }
-async function savePlayTest(operation,request){
+async function savePlayTest(operation){
  if(playTestSaving)return;
  playTestSaving=true;
  const revision=++playTestRevision;
@@ -244,11 +234,11 @@ async function savePlayTest(operation,request){
  delete $('playTestFeedback').dataset.refreshError;
  playTestFeedback('Guardando cambio…');
  try{
-  const data=await managePlayTest(operation,request?.id??null);
+  const data=await managePlayTest(operation);
   if(revision!==playTestRevision)return;
   renderPlayTest(data);
-  const messages={approve:'Solicitud aceptada. ',reject:'Solicitud rechazada. ',open:'Registro de pruebas abierto.',close:'Pruebas cerradas. Los requisitos habituales están activos.'};
-  playTestFeedback(messages[operation]+(request?.full_name??''));
+  const messages={open:'Registro de pruebas abierto.',close:'Pruebas cerradas. Los requisitos habituales están activos.'};
+  playTestFeedback(messages[operation]);
  }catch(e){
   if(revision===playTestRevision)playTestFeedback('No se pudo guardar el cambio. '+errorText(e));
  }finally{
@@ -372,7 +362,6 @@ function stopAdminPolling(){
  playTestFeedback('');
  $('playTestRequests').replaceChildren();
  $('playTestSummary').replaceChildren();
- $('playTestFilter').value='pending';
  for(const role of Object.keys(PLAY_TEST_ROLES)){
   hide(role+'PlayTest');
   $(role+'PlayTestRequests').replaceChildren();

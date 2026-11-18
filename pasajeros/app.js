@@ -25,11 +25,12 @@ async function checkPassenger(){
  if(p.error){message('accessMessage',errorText(p.error));screen('access');return false;}
  if(p.data?.role!=='passenger'||p.data?.status!=='approved'){currentUser=null;stopPolling();if(playTest&&data.user.app_metadata?.fast_trip_play_test==='passenger'){playTest.showStatus(p.data?.status);return false;}screen('access');message('accessMessage','Tu cuenta necesita la aprobación de Administración. Comunícate con DARO para revisar tu registro.');return false;}
  currentUser=data.user;profile=p.data;
- $('testPassengerBanner')?.classList.toggle('hidden',currentUser.app_metadata?.fast_trip_play_test!=='passenger');
+ const isPlayTest=currentUser.app_metadata?.fast_trip_play_test==='passenger';
+ $('testPassengerBanner')?.classList.toggle('hidden',!isPlayTest);
  passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
  message('greeting','HOLA, '+(profile.full_name||'PASAJERO').split(' ')[0].toUpperCase());
  message('profileName',profile.full_name);message('profilePhone',profile.phone||'Teléfono por confirmar con DARO');
- if(!await passengerFlow.afterApprovedLogin())return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},12000);return true;
+ if(!await passengerFlow.afterApprovedLogin({skipGuide:isPlayTest}))return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},12000);return true;
 }
 async function loadTrips(){
  if(!currentUser||loading)return;loading=true;

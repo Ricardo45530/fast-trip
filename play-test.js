@@ -4,13 +4,13 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  const section = document.getElementById('playTest');
  section.innerHTML = `
   <h2>Prueba cerrada de FAST TRIP</h2>
-  <p>Esta prueba es para mayores de 18 años. Usa el mismo dispositivo para consultar tu aprobación. Los viajes de prueba se hacen sin cobros.</p>
+  <p>Esta prueba es para mayores de 18 años. Regístrate y entra desde el mismo dispositivo. Los viajes de prueba se hacen sin cobros.</p>
   <form>
    <label>Nombre completo<input name="fullName" autocomplete="name" required minlength="2" maxlength="100"></label>
    <label>Número de celular<input name="phone" type="tel" autocomplete="tel" required maxlength="24" placeholder="09XXXXXXXX"></label>
-   <button type="submit">Enviar solicitud de prueba</button>
+   <button type="submit">Registrarme y entrar</button>
   </form>
-  <button type="button" data-resume class="hidden">Consultar aprobación</button>
+  <button type="button" data-resume class="hidden">Entrar a la prueba</button>
   <p role="status"></p>
   <button type="button" data-back>Volver</button>`;
  const form = section.querySelector('form');
@@ -42,7 +42,7 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   render();
   show('playTest');
   status.textContent = {
-   pending: 'Solicitud enviada. Administración debe aprobar tu registro. Pulsa «Consultar aprobación» después.',
+   pending: 'Todavía estamos preparando el acceso. Vuelve a intentar en unos instantes.',
    suspended: 'La cuenta de prueba está suspendida. Si la prueba sigue abierta, consulta a Administración.',
    rejected: 'Administración rechazó tu solicitud de prueba.'
   }[accountStatus] || 'No pudimos consultar tu solicitud de prueba.';
@@ -68,7 +68,7 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
    return;
   }
   submit.disabled = true;
-  status.textContent = 'Enviando solicitud…';
+  status.textContent = 'Preparando tu acceso…';
   try {
    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name + '\n' + phone));
    const signature = Array.from(new Uint8Array(hash)).join(',');
@@ -98,7 +98,7 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  };
  resume.onclick = async () => {
   resume.disabled = true;
-  status.textContent = 'Consultando aprobación…';
+  status.textContent = 'Abriendo la prueba…';
   try { await login(readDevice()); }
   catch (error) { status.textContent = error.message; }
   finally { resume.disabled = false; }
