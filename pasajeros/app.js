@@ -9,7 +9,7 @@ const STATUS={pending:'Buscando conductor',offered:'Esperando confirmación',acc
 const MONEY=new Intl.NumberFormat('es-EC',{style:'currency',currency:'USD'});
 let teenRequests=[];
 let client,currentUser=null,profile=null,recovering=false,trips=[],cancelRequests=[],loading=false,poll=null,pickup=null,action=null,lastRender='',activeScreen='welcome';
-function screen(id){if(id!=='registration')passengerFlow.stopCamera();if(id==='registration'&&!passengerExperience.hasAcceptedTerms())id='terms';activeScreen=id;for(const name of ['welcome','terms','access','registration','guide','daroWelcome','reset','tripPanel'])$(name).classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
+function screen(id){if(id!=='registration')passengerFlow.stopCamera();if(id==='registration'&&!passengerExperience.hasAcceptedTerms())id='terms';activeScreen=id;for(const name of ['welcome','terms','access','registration','guide','daroWelcome','reset','tripPanel','playTest'])$(name)?.classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
 function tab(id){document.querySelectorAll('.tab-content').forEach(x=>x.classList.toggle('hidden',x.id!==id));document.querySelectorAll('[data-tab]').forEach(x=>{if(x.dataset.tab===id)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});}
 function whatsapp(text){return 'https://wa.me/593963171259?text='+encodeURIComponent(text);}
 function errorText(error){if(!navigator.onLine)return 'Sin conexión. Revisa tu señal e intenta nuevamente.';if(error?.code==='23505')return 'Esta solicitud ya está registrada. Actualiza el estado antes de intentar otra vez.';return 'No pudimos completar la operación. Intenta nuevamente o contacta a DARO.';}
@@ -23,8 +23,10 @@ async function checkPassenger(){
  if(error||!data?.user){currentUser=null;stopPolling();screen('access');return false;}
  const p=await client.from('profiles').select('id,full_name,phone,role,status').eq('id',data.user.id).maybeSingle();
  if(p.error){message('accessMessage',errorText(p.error));screen('access');return false;}
- if(p.data?.role!=='passenger'||p.data?.status!=='approved'){currentUser=null;stopPolling();screen('access');message('accessMessage','Tu cuenta necesita la aprobación de Administración. Comunícate con DARO para revisar tu registro.');return false;}
- currentUser=data.user;profile=p.data;passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
+ if(p.data?.role!=='passenger'||p.data?.status!=='approved'){currentUser=null;stopPolling();if(playTest&&data.user.app_metadata?.fast_trip_play_test==='passenger'){playTest.showStatus(p.data?.status);return false;}screen('access');message('accessMessage','Tu cuenta necesita la aprobación de Administración. Comunícate con DARO para revisar tu registro.');return false;}
+ currentUser=data.user;profile=p.data;
+ $('testPassengerBanner')?.classList.toggle('hidden',currentUser.app_metadata?.fast_trip_play_test!=='passenger');
+ passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
  message('greeting','HOLA, '+(profile.full_name||'PASAJERO').split(' ')[0].toUpperCase());
  message('profileName',profile.full_name);message('profilePhone',profile.phone||'Teléfono por confirmar con DARO');
  if(!await passengerFlow.afterApprovedLogin())return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},12000);return true;
@@ -141,7 +143,15 @@ $('suggestionForm').onsubmit=async e=>{
  try{const r=await client.from('suggestions').insert({user_id:currentUser.id,role:'passenger',message:text});if(r.error)throw r.error;e.target.reset();message('suggestionMessage','Gracias. Tu mensaje quedó registrado en Administración.');}catch(err){message('suggestionMessage',errorText(err));}finally{btn.disabled=false;}
 };
 $('startBtn').onclick=async()=>{screen('access');if(client&&await checkPassenger())await loadTrips();};
-$('registerBtn').onclick=$('welcomeRegister').onclick=()=>screen(passengerExperience.hasAcceptedTerms()?'registration':'terms');
+const playTest = window.mountFastTripPlayTest?.({
+ role: 'passenger', getClient: () => client, show: screen, back: () => screen('access'),
+ onLogin: async () => { if (await checkPassenger()) await loadTrips(); }
+});
+$('registerBtn').onclick=$('welcomeRegister').onclick=async()=>{
+ const regular=()=>screen(passengerExperience.hasAcceptedTerms()?'registration':'terms');
+ if(!playTest)return regular();
+ try{await playTest.open(regular);}catch(e){screen('access');message('accessMessage',e.message);}
+};
 $('acceptTerms').onclick=()=>{passengerExperience.acceptTerms();message('termsMessage','');screen('registration');};
 $('declineTerms').onclick=()=>{message('termsMessage','Has elegido no aceptar. Para iniciar tu solicitud necesitas aceptar las condiciones. Puedes volver o contactar a DARO si tienes dudas.');};
 $('showPassword').onclick=()=>{const show=$('password').type==='password';$('password').type=show?'text':'password';message('showPassword',show?'Ocultar':'Ver');$('showPassword').setAttribute('aria-pressed',String(show));$('showPassword').setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');};
