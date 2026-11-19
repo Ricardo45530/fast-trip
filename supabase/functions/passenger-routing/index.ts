@@ -1,6 +1,32 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.49.1';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const origins=new Set(['https://ricardo45530.github.io','https://fasttripecuador.com','https://www.fasttripecuador.com']);
+type PhotonFeature = {
+ geometry?: {coordinates?: [number, number]};
+ properties?: {name?: string; street?: string; housenumber?: string; district?: string; city?: string; state?: string; countrycode?: string};
+};
+async function searchDestination(query:string){
+ const url=new URL(Deno.env.get('PHOTON_SEARCH_URL')||'https://photon.komoot.io/api/');
+ url.search=new URLSearchParams({q:query,limit:'5',lat:'-2.1962',lon:'-79.8862',bbox:'-92.1,-5.1,-75,1.7'}).toString();
+ const slot=await db.rpc('claim_map_request',{p_service:'destination_search'});
+ if(slot.error||slot.data!==true)throw new Error('Búsqueda ocupada');
+ const response=await fetch(url,{headers:{'User-Agent':'FASTTRIP/1.0 https://fasttripecuador.com'},signal:AbortSignal.timeout(8000)});
+ if(!response.ok)throw new Error('Búsqueda no disponible');
+ const {features}=await response.json() as {features:PhotonFeature[]};
+ const results=[];
+ for(const feature of features){
+  const [lng,lat]=feature.geometry?.coordinates||[];
+  const p=feature.properties;
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||p?.countrycode!=='EC')continue;
+  const street=[p.street,p.housenumber].filter(Boolean).join(' ');
+  const name=p.name||street;
+  if(!name)continue;
+  const label=[...new Set([name,street,p.district,p.city,p.state].filter(Boolean))].join(', ');
+  if(results.some(result=>result.label===label&&result.lat===lat&&result.lng===lng))continue;
+  results.push({lat,lng,name,street,label});
+ }
+ return results;
+}
 Deno.serve(async req=>{
  const origin=req.headers.get('origin'),headers:Record<string,string>={'content-type':'application/json','vary':'Origin','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
  if(origin&&origins.has(origin))headers['Access-Control-Allow-Origin']=origin;
@@ -13,6 +39,12 @@ Deno.serve(async req=>{
  const profile=await db.from('profiles').select('role,status').eq('id',user.data.user.id).maybeSingle();if(profile.data?.status!=='approved')return reply(403,{message:'Cuenta no aprobada'});
  try{
   const body=await req.json();
+  if(body.action==='search_destination'){
+   if(profile.data.role!=='passenger')return reply(403,{message:'Acceso de pasajero requerido'});
+   const query=typeof body.query==='string'?body.query.trim():'';
+   if(query.length<3||query.length>250)return reply(400,{message:'Revisa la dirección'});
+   return reply(200,{results:await searchDestination(query)});
+  }
   if(body.action!=='eta'||!/^[0-9a-f-]{36}$/i.test(body.trip_id||''))return reply(400,{message:'Solicitud inválida'});
   const result=await db.from('trips').select('id,passenger_id,driver_id,status,destination_lat,destination_lng,estimated_arrival_at,eta_updated_at').eq('id',body.trip_id).maybeSingle();const trip=result.data;
   if(!trip||![trip.passenger_id,trip.driver_id].includes(user.data.user.id))return reply(403,{message:'No participas en este viaje'});

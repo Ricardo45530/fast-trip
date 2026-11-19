@@ -8,6 +8,7 @@ const ACTIVE=['pending','offered','accepted','in_progress'];
 const STATUS={pending:'Buscando conductor',offered:'Esperando confirmación',accepted:'Conductor asignado',in_progress:'En camino a tu destino',completed:'Viaje completado',cancelled:'Viaje cancelado',rejected:'Solicitud rechazada',no_driver:'Sin conductor disponible'};
 const MONEY=new Intl.NumberFormat('es-EC',{style:'currency',currency:'USD'});
 let teenRequests=[];
+let submittingTrip=false;
 let client,currentUser=null,profile=null,recovering=false,trips=[],cancelRequests=[],loading=false,poll=null,pickup=null,action=null,lastRender='',activeScreen='welcome';
 function screen(id){if(id!=='registration')passengerFlow.stopCamera();if(id==='registration'&&!passengerExperience.hasAcceptedTerms())id='terms';activeScreen=id;for(const name of ['welcome','terms','access','registration','guide','daroWelcome','reset','tripPanel','playTest'])$(name)?.classList.toggle('hidden',name!==id);window.scrollTo(0,0);}
 function tab(id){document.querySelectorAll('.tab-content').forEach(x=>x.classList.toggle('hidden',x.id!==id));document.querySelectorAll('[data-tab]').forEach(x=>{if(x.dataset.tab===id)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});}
@@ -46,7 +47,7 @@ async function loadTrips(){
  if(teen.error)throw teen.error;teenRequests=teen.data||[];trips=t.data||[];cancelRequests=c.data||[];await passengerFlow.refreshEta(trips);if(await passengerFlow.processTrips(trips))return;
  message('syncStatus',c.error?'Viajes actualizados. No se pudieron consultar las cancelaciones.':'Actualizado a las '+new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})+' · se actualiza cada 12 segundos');
  const signature=JSON.stringify([trips,cancelRequests,teenRequests]);if(signature!==lastRender){lastRender=signature;renderTrips();}
- const active=trips.some(x=>ACTIVE.includes(x.status));$('sendBtn').disabled=active;
+ const active=trips.some(x=>ACTIVE.includes(x.status));$('sendBtn').disabled=active||submittingTrip;
  if(active)message('tripMessage','Ya tienes una solicitud activa. Consulta su estado en Mis viajes.');
  }catch(e){message('syncStatus',errorText(e)+' Se conserva la última información disponible.');}finally{loading=false;}
 }
@@ -109,21 +110,30 @@ $('locateBtn').onclick=()=>{
  navigator.geolocation.getCurrentPosition(p=>{pickup={lat:p.coords.latitude,lng:p.coords.longitude};message('locationStatus','Ubicación adjunta. Añade la dirección o una referencia para recogerte.');$('origin').focus();$('locateBtn').disabled=false;},()=>{pickup=null;message('locationStatus','No se pudo obtener ubicación. Escribe tu dirección de recogida.');$('locateBtn').disabled=false;},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
 };
 $('tripForm').onsubmit=async e=>{
- e.preventDefault();if(!client||!currentUser)return;await loadTrips();if(!currentUser)return;const btn=$('sendBtn');btn.disabled=true;
+ e.preventDefault();
+ if(!client||!currentUser||submittingTrip)return;
+ const uid=currentUser.id,btn=$('sendBtn');
+ submittingTrip=true;btn.disabled=true;message('tripMessage','');
  try{
+ await loadTrips();if(currentUser?.id!==uid)return;
  const origin=$('origin').value.trim(),destination=$('destination').value.trim();
  if(!origin||!destination||origin.toLowerCase()===destination.toLowerCase()){message('tripMessage','Indica origen y destino diferentes.');return;}
- const uid=currentUser.id;const active=await client.from('trips').select('id').eq('passenger_id',uid).in('status',ACTIVE).limit(1);
+ const active=await client.from('trips').select('id').eq('passenger_id',uid).in('status',ACTIVE).limit(1);
  if(active.error)throw active.error;if(active.data?.length){message('tripMessage','Ya tienes un viaje activo. Consulta Mis viajes.');await loadTrips();tab('history');return;}
  const p=await client.from('profiles').select('role,status').eq('id',uid).single();if(p.error||p.data.role!=='passenger'||p.data.status!=='approved'){currentUser=null;stopPolling();screen('access');message('accessMessage','Tu cuenta necesita aprobación de Administración.');return;}
- const destinationPoint=passengerFlow.tripDestination();if(!destinationPoint){message('tripMessage','Confirma la ubicación del destino antes de solicitar el viaje.');return;}
+ const destinationPoint=await passengerFlow.findDestination();
+ if(currentUser?.id!==uid)return;
+ if(!destinationPoint||destinationPoint.text!==destination||$('destination').value.trim()!==destination){
+  message('tripMessage','Revisa la dirección en el campo Destino y vuelve a solicitar el viaje.');
+  return;
+ }
  const payload={destination_lat:destinationPoint.lat,destination_lng:destinationPoint.lng,passenger_id:uid,origin_text:origin,destination_text:destination,service_type:$('service').value,notes:$('notes').value.trim()||null,status:'pending'};
  if(pickup){payload.pickup_lat=pickup.lat;payload.pickup_lng=pickup.lng;}
  const guardian=await client.rpc('passenger_guardian_status');if(guardian.error)throw guardian.error;
- if(guardian.data?.is_adolescent){const r=await client.rpc('request_adolescent_trip',{p_origin:origin,p_destination:destination,p_service:payload.service_type,p_destination_lat:destinationPoint.lat,p_destination_lng:destinationPoint.lng,p_pickup_lat:pickup?.lat??null,p_pickup_lng:pickup?.lng??null});if(r.error)throw r.error;message('tripMessage','Solicitud registrada. Tu representante debe autorizar este viaje por WhatsApp y Administración debe verificarlo antes de buscar conductor.');await loadTrips();tab('history');return;}
+ if(guardian.data?.is_adolescent){const r=await client.rpc('request_adolescent_trip',{p_origin:origin,p_destination:destination,p_service:payload.service_type,p_destination_lat:destinationPoint.lat,p_destination_lng:destinationPoint.lng,p_pickup_lat:pickup?.lat??null,p_pickup_lng:pickup?.lng??null});if(r.error)throw r.error;$('tripForm').reset();passengerFlow.clearDestination();pickup=null;message('locationStatus','');message('tripMessage','Solicitud registrada. Tu representante debe autorizar este viaje por WhatsApp y Administración debe verificarlo antes de buscar conductor.');await loadTrips();tab('history');return;}
  const r=await client.from('trips').insert(payload);if(r.error)throw r.error;passengerExperience.nextLandscape();
  $('tripForm').reset();passengerFlow.clearDestination();pickup=null;message('locationStatus','');message('tripMessage','Solicitud enviada. Espera la confirmación de un conductor.');await loadTrips();tab('history');
- }catch(err){message('tripMessage',errorText(err));}finally{btn.disabled=trips.some(t=>ACTIVE.includes(t.status));}
+ }catch(err){message('tripMessage',errorText(err));}finally{submittingTrip=false;btn.disabled=trips.some(t=>ACTIVE.includes(t.status));}
 };
 $('registrationForm').onsubmit=passengerFlow.submitRegistration;
 $('loginForm').onsubmit=async e=>{
