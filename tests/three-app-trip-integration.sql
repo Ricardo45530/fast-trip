@@ -4,7 +4,7 @@ do $test$
 declare
  passenger uuid:=gen_random_uuid(); driver1 uuid:=gen_random_uuid(); driver2 uuid:=gen_random_uuid(); administrator uuid;
  vehicle1 uuid:=gen_random_uuid(); vehicle2 uuid:=gen_random_uuid(); trip uuid:=gen_random_uuid();
- pin text; result jsonb; ok boolean; count_rows integer;
+ pin text; share_token text; result jsonb; ok boolean; count_rows integer;
 begin
  select id into administrator from public.profiles where role='admin' and status='approved' limit 1;
  if administrator is null then raise exception 'Missing approved administrator';end if;
@@ -24,8 +24,8 @@ begin
  perform set_config('request.jwt.claim.sub',passenger::text,true);
  perform set_config('request.jwt.claims',jsonb_build_object('sub',passenger,'role','authenticated')::text,true);
  execute 'set local role authenticated';
- insert into public.trips(id,passenger_id,origin_text,destination_text,service_type,status,destination_lat,destination_lng)
- values(trip,passenger,'Origen temporal de integración','Destino temporal de integración','Transporte ejecutivo','pending',-2.19,-79.89);
+ insert into public.trips(id,passenger_id,origin_text,destination_text,service_type,status,destination_lat,destination_lng,pickup_lat,pickup_lng)
+ values(trip,passenger,'Origen temporal de integración','Destino temporal de integración','Transporte ejecutivo','pending',-2.19,-79.89,-2.18,-79.88);
  select count(*) into count_rows from public.trips where id=trip;
  if count_rows<>1 then raise exception 'Passenger cannot see requested trip';end if;
  execute 'reset role';
@@ -60,6 +60,14 @@ begin
  if pin is null or pin!~'^[0-9]{6}$' then raise exception 'Passenger cannot retrieve boarding PIN';end if;
  result:=public.passenger_trip_details(trip);
  if result->>'driver_name'<>'Conductor temporal integración 1' or result->>'plate'<>'TEST-'||vehicle1 then raise exception 'Passenger cannot see assigned driver and vehicle';end if;
+ share_token:=split_part(public.create_trip_share_link(trip),'#token=',2);
+ execute 'reset role';
+ execute 'set local role anon';
+ if public.read_shared_trip(repeat('0',64)) is not null then raise exception 'Invalid link exposed trip';end if;
+ result:=public.read_shared_trip(share_token);
+ if (result->>'pickup_lat')::numeric is distinct from -2.18 or (result->>'destination_lat')::numeric is distinct from -2.19 then
+  raise exception 'Shared map is missing pickup or destination';
+ end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',driver1::text,true);
  perform set_config('request.jwt.claims',jsonb_build_object('sub',driver1,'role','authenticated')::text,true);
@@ -81,6 +89,12 @@ begin
  select count(*) into count_rows from public.trip_gps_points where trip_id=trip;
  if count_rows<>1 then raise exception 'Admin cannot supervise driver GPS';end if;
  execute 'reset role';
+ execute 'set local role anon';
+ result:=public.read_shared_trip(share_token);
+ if (result->>'latitude')::numeric is distinct from -2.189 or result->>'pickup_lat' is not null or (result->>'destination_lat')::numeric is distinct from -2.19 then
+  raise exception 'Shared map did not update during the trip';
+ end if;
+ execute 'reset role';
  perform set_config('request.jwt.claim.sub',driver1::text,true);
  perform set_config('request.jwt.claims',jsonb_build_object('sub',driver1,'role','authenticated')::text,true);
  execute 'set local role authenticated';
@@ -93,7 +107,13 @@ begin
  select count(*) into count_rows from public.trips where id=trip and status='completed' and started_at is not null and completed_at is not null;
  if count_rows<>1 then raise exception 'Completed trip not visible to passenger';end if;
  execute 'reset role';
+ execute 'set local role anon';
+ result:=public.read_shared_trip(share_token);
+ if result->>'status' is distinct from 'completed' or result->>'latitude' is not null or result->>'destination_lat' is not null then
+  raise exception 'Completed link still exposes map coordinates';
+ end if;
+ execute 'reset role';
 end;
 $test$;
 rollback;
-select 'PASS: authenticated passenger request, admin supervision, connected driver visibility, first acceptance only, arrival, invalid PIN rejected, valid PIN starts, passenger driver details, driver GPS write, passenger and admin GPS read, completion visible; temporary data rolled back' as integration_result;
+select 'PASS: authenticated passenger request, admin supervision, connected driver visibility, first acceptance only, arrival, invalid PIN rejected, valid PIN starts, passenger driver details, driver GPS write, passenger and admin GPS read, shared link shows active coordinates and hides them after completion; temporary data rolled back' as integration_result;
