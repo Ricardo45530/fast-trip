@@ -81,7 +81,7 @@ async function driverLocation(t,card){
  let line=card.querySelector('.gps-note');if(!line){line=node('p','','fine gps-note');card.append(line);}line.textContent='Consultando ubicación…';
  const r=await client.from('trip_gps_points').select('latitude,longitude,recorded_at').eq('trip_id',t.id).order('recorded_at',{ascending:false}).limit(1);
  if(r.error||!r.data?.length){line.textContent='Aún no hay ubicación registrada para este viaje. Consulta con DARO.';return;}
- const p=r.data[0];const age=Date.now()-new Date(p.recorded_at).getTime();line.replaceChildren(node('span',(age>120000?'Último registro disponible · ':'Ubicación registrada · ')+new Date(p.recorded_at).toLocaleTimeString('es-EC')+' '));line.append(link('Ver en Google Maps ↗','https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.latitude+','+p.longitude)));
+ const p=r.data[0];const age=Date.now()-new Date(p.recorded_at).getTime();line.replaceChildren(node('span',(age>120000?'Último registro disponible · ':'Ubicación registrada · ')+new Date(p.recorded_at).toLocaleTimeString('es-EC')+' '));const locationUrl=tripMaps.location(p.latitude,p.longitude);if(locationUrl)line.append(link('Ver en Google Maps',locationUrl),node('span',' · '),link('Abrir en Waze',tripMaps.location(p.latitude,p.longitude,'waze')));
 }
 async function shareTrip(t,card){try{await passengerFlow.share(t);}catch(e){message('syncStatus',e.message||errorText(e));}}
 function openAction(type,trip){
@@ -107,7 +107,7 @@ $('actionText').addEventListener('input',()=>{if(action?.type==='cancel'&&$('act
 $('locateBtn').onclick=()=>{
  if(!navigator.geolocation){message('locationStatus','Tu dispositivo no permite compartir ubicación. Escribe la dirección.');return;}
  $('locateBtn').disabled=true;message('locationStatus','Solicitando permiso de ubicación…');
- navigator.geolocation.getCurrentPosition(p=>{pickup={lat:p.coords.latitude,lng:p.coords.longitude};message('locationStatus','Ubicación adjunta. Añade la dirección o una referencia para recogerte.');$('origin').focus();$('locateBtn').disabled=false;},()=>{pickup=null;message('locationStatus','No se pudo obtener ubicación. Escribe tu dirección de recogida.');$('locateBtn').disabled=false;},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+ navigator.geolocation.getCurrentPosition(p=>{pickup={lat:p.coords.latitude,lng:p.coords.longitude};passengerFlow.clearPickupSearch();message('locationStatus','Ubicación adjunta. Añade la dirección o una referencia para recogerte.');$('origin').focus();$('locateBtn').disabled=false;},()=>{pickup=null;message('locationStatus','No se pudo obtener ubicación. Escribe tu dirección de recogida.');$('locateBtn').disabled=false;},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
 };
 $('tripForm').onsubmit=async e=>{
  e.preventDefault();
@@ -121,18 +121,25 @@ $('tripForm').onsubmit=async e=>{
  const active=await client.from('trips').select('id').eq('passenger_id',uid).in('status',ACTIVE).limit(1);
  if(active.error)throw active.error;if(active.data?.length){message('tripMessage','Ya tienes un viaje activo. Consulta Mis viajes.');await loadTrips();tab('history');return;}
  const p=await client.from('profiles').select('role,status').eq('id',uid).single();if(p.error||p.data.role!=='passenger'||p.data.status!=='approved'){currentUser=null;stopPolling();screen('access');message('accessMessage','Tu cuenta necesita aprobación de Administración.');return;}
- const destinationPoint=await passengerFlow.findDestination();
+ const [destinationPoint,pickupPoint]=await Promise.all([passengerFlow.findDestination(),passengerFlow.findPickup()]);
  if(currentUser?.id!==uid)return;
  if(!destinationPoint||destinationPoint.text!==destination||$('destination').value.trim()!==destination){
   message('tripMessage','Revisa la dirección en el campo Destino y vuelve a solicitar el viaje.');
   return;
  }
+ if($('origin').value.trim()!==origin||(tripMaps.googleMapConfigured&&!pickupPoint)){
+  message('tripMessage','Confirma la ubicación de recogida y vuelve a solicitar el viaje.');
+  return;
+ }
  const payload={destination_lat:destinationPoint.lat,destination_lng:destinationPoint.lng,passenger_id:uid,origin_text:origin,destination_text:destination,service_type:$('service').value,notes:$('notes').value.trim()||null,status:'pending'};
- if(pickup){payload.pickup_lat=pickup.lat;payload.pickup_lng=pickup.lng;}
+ if(pickupPoint){payload.pickup_lat=pickupPoint.lat;payload.pickup_lng=pickupPoint.lng;}
+ const googlePickup=pickupPoint?.provider==='google',googleDestination=destinationPoint.provider==='google';
+ if(googlePickup)payload.pickup_google_expires_at=new Date().toISOString();
+ if(googleDestination)payload.destination_google_expires_at=new Date().toISOString();
  const guardian=await client.rpc('passenger_guardian_status');if(guardian.error)throw guardian.error;
- if(guardian.data?.is_adolescent){const r=await client.rpc('request_adolescent_trip',{p_origin:origin,p_destination:destination,p_service:payload.service_type,p_destination_lat:destinationPoint.lat,p_destination_lng:destinationPoint.lng,p_pickup_lat:pickup?.lat??null,p_pickup_lng:pickup?.lng??null});if(r.error)throw r.error;$('tripForm').reset();passengerFlow.clearDestination();pickup=null;message('locationStatus','');message('tripMessage','Solicitud registrada. Tu representante debe autorizar este viaje por WhatsApp y Administración debe verificarlo antes de buscar conductor.');await loadTrips();tab('history');return;}
+ if(guardian.data?.is_adolescent){const r=await client.rpc(googlePickup||googleDestination?'request_adolescent_trip_with_google':'request_adolescent_trip',{...(googlePickup||googleDestination?{p_google_pickup:googlePickup,p_google_destination:googleDestination}:{}),p_origin:origin,p_destination:destination,p_service:payload.service_type,p_destination_lat:destinationPoint.lat,p_destination_lng:destinationPoint.lng,p_pickup_lat:pickupPoint?.lat??null,p_pickup_lng:pickupPoint?.lng??null});if(r.error)throw r.error;$('tripForm').reset();passengerFlow.clearDestination();pickup=null;passengerFlow.clearPickupSearch();message('tripMessage','Solicitud registrada. Tu representante debe autorizar este viaje por WhatsApp y Administración debe verificarlo antes de buscar conductor.');await loadTrips();tab('history');return;}
  const r=await client.from('trips').insert(payload);if(r.error)throw r.error;passengerExperience.nextLandscape();
- $('tripForm').reset();passengerFlow.clearDestination();pickup=null;message('locationStatus','');message('tripMessage','Solicitud enviada. Espera la confirmación de un conductor.');await loadTrips();tab('history');
+ $('tripForm').reset();passengerFlow.clearDestination();pickup=null;passengerFlow.clearPickupSearch();message('tripMessage','Solicitud enviada. Espera la confirmación de un conductor.');await loadTrips();tab('history');
  }catch(err){message('tripMessage',errorText(err));}finally{submittingTrip=false;btn.disabled=trips.some(t=>ACTIVE.includes(t.status));}
 };
 $('registrationForm').onsubmit=passengerFlow.submitRegistration;

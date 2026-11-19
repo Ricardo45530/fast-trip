@@ -128,9 +128,9 @@ const passengerFlow=(()=>{
  }
  async function expireSession(){if(!client||!currentUser)return;playedAudio.pause();const r=await client.auth.signOut({scope:'local'});if(r.error){message('syncStatus','No se pudo cerrar la sesión. Se volverá a intentar.');return;}reset();currentUser=null;profile=null;stopPolling();screen('access');message('accessMessage','Tu sesión se cerró 15 minutos después de finalizar el viaje. Ingresa para solicitar otro.');}
  function loggedIn(user){sessionStarted=Date.now();storage.set('fasttrip.session.'+user.id,sessionStarted);preferences=null;preferencesUser=null;}
- function reset(){stopCamera();clearDestination();destinationInput.value='';if(expiryTimer)clearTimeout(expiryTimer);expiryTimer=null;preferences=null;preferencesUser=null;sessionStarted=0;playedAudio.pause();tripDetails.clear();weather=null;weatherLoaded=0;if(weatherAudioUrl)URL.revokeObjectURL(weatherAudioUrl);weatherAudioUrl=null;el('daroWelcomeVideo').pause();el('tripNotice').classList.add('hidden');}
+ function reset(){stopCamera();pickup=null;clearPickupSearch();originInput.value='';clearDestination();destinationInput.value='';if(expiryTimer)clearTimeout(expiryTimer);expiryTimer=null;preferences=null;preferencesUser=null;sessionStarted=0;playedAudio.pause();tripDetails.clear();weather=null;weatherLoaded=0;if(weatherAudioUrl)URL.revokeObjectURL(weatherAudioUrl);weatherAudioUrl=null;el('daroWelcomeVideo').pause();el('tripNotice').classList.add('hidden');}
  const destinationInput=el('destination'),destinationResults=el('destinationResults');
- let destinationMap=null,destinationMarker=null,destinationSearch=null;
+ let destinationMap=null,destinationMarker=null,destinationSearch=null,googleDestinationMap=null,googleDestinationMarker=null;
  const destinationText=()=>destinationInput.value.trim();
  function showDestinationMap(){
   if(!window.L)return false;
@@ -143,13 +143,45 @@ const passengerFlow=(()=>{
   setTimeout(()=>destinationMap.invalidateSize(),0);
   return true;
  }
- function setDestination({lat,lng},text,status){
-  destinationPoint={lat,lng,text};
+ const mapTarget=el('destinationMap');
+ el('osmAttribution').classList.toggle('hidden',tripMaps.googleMapConfigured);
+ el('googleAttribution').classList.toggle('hidden',!tripMaps.googleMapConfigured);
+ async function showGoogleDestination(point, text){
+  const maps=await tripMaps.loadGoogleMaps();
+  if(destinationText()!==text||mapTarget.classList.contains('hidden'))return;
+  const center=point||{lat:-2.1962,lng:-79.8862};
+  if(!googleDestinationMap){
+   googleDestinationMap=new maps.Map(mapTarget,{center,zoom:point?16:13,streetViewControl:false,mapTypeControl:false});
+   googleDestinationMap.addListener('click',event=>{
+    if(event.latLng&&destinationText().length>=3)setDestination(event.latLng.toJSON(),destinationText(),'Destino ajustado en el mapa.','google');
+   });
+  }
+  if(point){
+   googleDestinationMap.setCenter(center);
+   googleDestinationMap.setZoom(16);
+   if(googleDestinationMarker)googleDestinationMarker.setPosition(center);
+   else googleDestinationMarker=new maps.Marker({map:googleDestinationMap,position:center});
+   googleDestinationMarker.setMap(googleDestinationMap);
+  }
+ }
+ function displayGoogleMap(point,text){
+  mapTarget.classList.remove('hidden');
+  showGoogleDestination(point,text).catch(()=>{
+   if(destinationText()===text){
+    mapTarget.classList.add('hidden');
+    if(!point)message('destinationLookupStatus','No se pudo cargar Google Maps. Revisa tu conexión.');
+   }
+  });
+ }
+ function setDestination({lat,lng},text,status,provider='osm'){
+  destinationPoint={lat,lng,text,provider};
   destinationSearch=null;
   destinationResults.replaceChildren();
   el('adjustDestination').classList.remove('hidden');
   message('destinationLookupStatus',status);
-  if(showDestinationMap()){
+  if(tripMaps.googleMapConfigured){
+   displayGoogleMap(destinationPoint,text);
+  }else if(showDestinationMap()){
    destinationMap.setView([lat,lng],16);
    if(destinationMarker)destinationMarker.setLatLng([lat,lng]);
    else destinationMarker=window.L.marker([lat,lng]).addTo(destinationMap);
@@ -157,11 +189,86 @@ const passengerFlow=(()=>{
   return destinationPoint;
  }
  el('adjustDestination').onclick=()=>{
-  if(destinationText().length<3)return;
-  if(showDestinationMap())message('destinationLookupStatus','Toca el mapa para ajustar el punto del destino.');
+  const text=destinationText();
+  if(text.length<3)return;
+  if(tripMaps.googleMapConfigured){
+   displayGoogleMap(tripDestination(),text);
+   message('destinationLookupStatus','Toca el mapa para ajustar el punto del destino.');
+  }else if(showDestinationMap())message('destinationLookupStatus','Toca el mapa para ajustar el punto del destino.');
   else message('destinationLookupStatus','No se pudo cargar el mapa. Revisa tu conexión.');
  };
  const normalizePlace=text=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ function addAttribution(target,places,provider){
+  if(provider!=='google')return;
+  const names=places.flatMap(place=>(place.attributions||[]).map(attribution=>attribution.provider)).filter(Boolean);
+  const label=document.createElement('p');
+  label.className='fine';
+  label.textContent=['Google Maps',...new Set(names)].join(' · ');
+  label.setAttribute('translate','no');
+  target.append(label);
+ }
+ async function searchPlaces(text, field){
+  const {data,error}=await client.functions.invoke('passenger-routing',{body:{action:'search_destination',query:text,field,google_maps:tripMaps.googleMapConfigured}});
+  if(error||!Array.isArray(data?.results))throw new Error('Búsqueda no disponible');
+  return {provider:data.provider,results:data.results.filter(place=>tripMaps.coordinates(place.lat,place.lng)&&typeof place.label==='string')};
+ }
+ function exactPlace(text,results){
+  const query=normalizePlace(text);
+  const exact=results.filter(place=>[place.name,place.street].some(name=>{
+   if(typeof name!=='string'||!name)return false;
+   const prefix=normalizePlace(name);
+   return prefix&&(query===prefix||(query.startsWith(prefix+' ')&&normalizePlace(place.label).includes(query.slice(prefix.length+1))));
+  }));
+  const first=exact[0];
+  return first&&exact.every(place=>Math.hypot(place.lat-first.lat,place.lng-first.lng)<.001)?first:null;
+ }
+ function renderPlaceOptions(target,places,provider,select){
+  for(const place of places){
+   const button=document.createElement('button');
+   button.type='button';button.className='outline';button.textContent=place.label;
+   button.onclick=()=>select(place);
+   target.append(button);
+  }
+  addAttribution(target,places,provider);
+ }
+ let pickupSearch=null,pickupPlace=null;
+ const originInput=el('origin'),pickupResults=el('pickupResults');
+ function clearPickupSearch(){
+  pickupSearch=null;pickupPlace=null;pickupResults.replaceChildren();
+  if(!pickup)message('locationStatus','');
+ }
+ function findPickup(){
+  const text=originInput.value.trim();
+  if(pickup||!tripMaps.googleMapConfigured||!client||!currentUser||text.length<3)return Promise.resolve(pickup);
+  if(pickupPlace?.text===text)return Promise.resolve(pickupPlace);
+  if(pickupSearch?.text===text)return pickupSearch.promise;
+  const search={text,promise:null};
+  pickupSearch=search;
+  const select=(place,provider)=>{
+   pickupPlace={lat:place.lat,lng:place.lng,text,provider};
+   pickupSearch=null;pickupResults.replaceChildren();addAttribution(pickupResults,[place],provider);
+   message('locationStatus',place.label);
+   return pickupPlace;
+  };
+  message('locationStatus','Buscando la recogida…');
+  search.promise=(async()=>{
+   try{
+    const {results,provider}=await searchPlaces(text,'pickup');
+    if(pickupSearch!==search||originInput.value.trim()!==text||pickup)return pickup;
+    const match=exactPlace(text,results);
+    if(match)return select(match,provider);
+    renderPlaceOptions(pickupResults,results,provider,place=>select(place,provider));
+    message('locationStatus',results.length?'Elige el lugar de recogida.':'No encontramos la recogida. Añade el sector o usa tu ubicación actual.');
+    return null;
+   }catch{
+    if(pickupSearch===search){pickupSearch=null;message('locationStatus','No se pudo buscar la recogida. Intenta de nuevo o usa tu ubicación actual.');}
+    return null;
+   }
+  })();
+  return search.promise;
+ }
+ originInput.addEventListener('input',clearPickupSearch);
+ originInput.addEventListener('change',()=>{void findPickup();});
  function findDestination(){
   const text=destinationText();
   if(!client||!currentUser||text.length<3)return Promise.resolve(null);
@@ -172,32 +279,21 @@ const passengerFlow=(()=>{
   message('destinationLookupStatus','Buscando el destino…');
   search.promise=(async()=>{
    try{
-    const {data,error}=await client.functions.invoke('passenger-routing',{body:{action:'search_destination',query:text}});
+    const {results,provider}=await searchPlaces(text,'destination');
     if(destinationSearch!==search||destinationText()!==text)return null;
-    if(error||!Array.isArray(data?.results))throw new Error('Búsqueda no disponible');
-    const results=data.results.filter(place=>Number.isFinite(place.lat)&&Number.isFinite(place.lng)&&typeof place.label==='string');
-    const query=normalizePlace(text);
-    const exact=results.filter(place=>[place.name,place.street].some(name=>{
-     if(typeof name!=='string'||!name)return false;
-     const prefix=normalizePlace(name);
-     return prefix&&(query===prefix||(query.startsWith(prefix+' ')&&normalizePlace(place.label).includes(query.slice(prefix.length+1))));
-    }));
-    const first=exact[0];
-    // A venue and its access road can share the same name in the map data.
-    if(first&&exact.every(place=>Math.hypot(place.lat-first.lat,place.lng-first.lng)<.001)){
-     return setDestination(first,text,first.label);
-    }
+    const match=exactPlace(text,results);
+    const select=place=>{
+     const point=setDestination(place,text,place.label,provider);
+     addAttribution(destinationResults,[place],provider);
+     return point;
+    };
+    if(match)return select(match);
     el('adjustDestination').classList.remove('hidden');
     if(!results.length){
      message('destinationLookupStatus','No encontramos esa dirección. Añade el sector o la ciudad, o ubica el destino en el mapa.');
     }else{
      message('destinationLookupStatus',results.length===1?'¿Es este tu destino?':'Elige la dirección que corresponde a tu destino.');
-     for(const place of results){
-      const button=document.createElement('button');
-      button.type='button';button.className='outline';button.textContent=place.label;
-      button.onclick=()=>setDestination(place,text,place.label);
-      destinationResults.append(button);
-     }
+     renderPlaceOptions(destinationResults,results,provider,select);
     }
     return null;
    }catch{
@@ -213,13 +309,14 @@ const passengerFlow=(()=>{
  destinationInput.addEventListener('input',clearDestination);
  destinationInput.addEventListener('change',()=>{void findDestination();});
  let lastEtaCheck=0;
- async function refreshEta(list){const trip=list.find(t=>t.status==='in_progress');if(!trip||Date.now()-lastEtaCheck<60000)return;lastEtaCheck=Date.now();try{const r=await client.functions.invoke('passenger-routing',{body:{action:'eta',trip_id:trip.id}});if(!r.error){trip.estimated_arrival_at=r.data?.estimated_arrival_at||null;if(r.data?.eta_updated_at)trip.eta_updated_at=r.data.eta_updated_at;}}catch{}}
+ async function refreshEta(list){const trip=list.find(t=>t.status==='in_progress');if(!trip||Date.now()-lastEtaCheck<60000)return;lastEtaCheck=Date.now();try{const r=await client.functions.invoke('passenger-routing',{body:{action:'eta',trip_id:trip.id,google_maps:tripMaps.googleMapConfigured}});if(!r.error){trip.estimated_arrival_at=r.data?.estimated_arrival_at||null;if(r.data?.eta_updated_at)trip.eta_updated_at=r.data.eta_updated_at;}}catch{}}
  function tripDestination(){return destinationPoint?.text===destinationText()?destinationPoint:null;}
  function clearDestination(){
   destinationPoint=null;destinationSearch=null;destinationResults.replaceChildren();
   el('adjustDestination').classList.add('hidden');el('destinationMap').classList.add('hidden');
   if(destinationMarker){destinationMap.removeLayer(destinationMarker);destinationMarker=null;}
+  if(googleDestinationMarker)googleDestinationMarker.setMap(null);
   message('destinationLookupStatus','');
  }
- return {refreshEta,findDestination,clearDestination,submitRegistration,afterApprovedLogin,share,decorateTrip,processTrips,loggedIn,reset,stopCamera,loadWeather,phone};
+ return {refreshEta,findDestination,clearDestination,findPickup,clearPickupSearch,submitRegistration,afterApprovedLogin,share,decorateTrip,processTrips,loggedIn,reset,stopCamera,loadWeather,phone};
 })();
