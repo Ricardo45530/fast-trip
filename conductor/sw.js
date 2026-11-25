@@ -1,17 +1,8 @@
-const CACHE_NAME = "fast-trip-conductor-v1";
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll([
-        "/fast-trip/conductor/",
-        "/fast-trip/conductor/manifest.webmanifest"
-      ])
-    )
-  );
-  self.skipWaiting();
+// Network-only service worker: never cache private trip or account data.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
+self.addEventListener("fetch", event => {
+  if (event.request.method === "GET" && event.request.mode === "navigate") {
+    event.respondWith(fetch(event.request));
+  }
 });
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
-})
