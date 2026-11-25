@@ -166,4 +166,17 @@ await trips();refreshTimer=setInterval(()=>{if(!document.hidden)trips();},12000)
 }
 init().catch(e=>say('loginStatus',e.message));
 </script><script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error)); }</script>
+<script>
+(() => {
+let promptEvent;
+const panel=document.createElement("div");
+panel.style.cssText="max-width:540px;margin:12px auto;padding:12px;text-align:center;color:#e6be5d;background:#151515;border:1px solid #b99142;border-radius:10px";
+const button=document.createElement("button");button.type="button";button.textContent="Instalar FAST TRIP Conductor";button.style.cssText="padding:12px;background:#e6be5d;color:#111;border:0;border-radius:8px;font-weight:bold";
+const help=document.createElement("p");help.setAttribute("role","status");help.style.fontSize="14px";panel.append(button,help);
+if(!matchMedia("(display-mode: standalone)").matches && !navigator.standalone) document.body.append(panel);
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptEvent=e;});
+button.addEventListener("click",async()=>{if(promptEvent){try{await promptEvent.prompt();await promptEvent.userChoice;}catch(e){help.textContent="Usa el menú del navegador para instalar.";}promptEvent=null;}else{help.textContent="En Chrome o Samsung Internet, abre el menú y elige Instalar aplicación o Añadir a pantalla de inicio. En iPhone, usa Safari > Compartir > Añadir a pantalla de inicio.";}});
+window.addEventListener("appinstalled",()=>panel.remove());
+})();
+</script>
 </body></html>
