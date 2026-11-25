@@ -165,4 +165,5 @@ async function tripsAfterAction(){await new Promise(resolve=>setTimeout(resolve,
 await trips();refreshTimer=setInterval(()=>{if(!document.hidden)trips();},12000);
 }
 init().catch(e=>say('loginStatus',e.message));
-</script></body></html>
+</script><script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error)); }</script>
+</body></html>
