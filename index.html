@@ -366,15 +366,122 @@ adminWelcome.addEventListener('close',()=>{
   adminWelcomeVideo.load();
 });
 
-async function updateAccess(welcomeUserId){if(recoveryMode||!client)return;hide('recoveryPanel');hide('adminPanel');hide('driverPanel');const u=await user();if(!u){show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){if(welcomeUserId===u.id)openAdminWelcome();show('adminPanel');startAdminPolling();if(!activeSection){const trial=await refreshPlayTest();const requestedSection=location.hash.slice(1);if(!activeSection)await section(['pruebas','pasajeros','conductores'].includes(requestedSection)?requestedSection:(trial?.enabled?'pruebas':'seguridad'));}}else if(p.role==='driver'){show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
+const ADMIN_IDLE_LIMIT = 20 * 60 * 1000;
+let adminIdleKey;
+let adminIdleDeadline;
+let adminIdleTimer;
+let adminIdleExpired = false;
+
+function readAdminIdleDeadline(){
+  try{
+    const saved = Number(localStorage.getItem(adminIdleKey));
+    if(Number.isFinite(saved) && saved > 0)return saved;
+  }catch{}
+  return adminIdleDeadline;
+}
+
+function saveAdminIdleDeadline(deadline){
+  adminIdleDeadline = deadline;
+  try{localStorage.setItem(adminIdleKey,String(deadline));}catch{}
+}
+
+function stopAdminIdle(){
+  clearTimeout(adminIdleTimer);
+  if(adminIdleKey){
+    try{localStorage.removeItem(adminIdleKey);}catch{}
+  }
+  adminIdleKey = undefined;
+  adminIdleDeadline = undefined;
+  adminIdleExpired = false;
+}
+
+function adminSessionKey(session){
+  let sessionId = session.user.id;
+  try{
+    const payload = session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    sessionId = JSON.parse(atob(payload)).session_id || sessionId;
+  }catch{}
+  return 'fast-trip:admin-idle:' + sessionId;
+}
+
+async function signOutIdleAdmin(){
+  try{
+    const {data:{session},error:sessionError} = await client.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!adminIdleExpired)return;
+    if(!session || adminSessionKey(session)!==adminIdleKey){
+      stopAdminIdle();
+      if(session)await updateAccess();
+      return;
+    }
+    const {error} = await client.auth.signOut({scope:'local'});
+    if(error)throw error;
+    if(adminIdleExpired)stopAdminIdle();
+  }catch{
+    if(adminIdleExpired)adminIdleTimer = setTimeout(signOutIdleAdmin,5000);
+  }
+}
+
+function checkAdminIdle(){
+  clearTimeout(adminIdleTimer);
+  if(!adminIdleKey || adminIdleExpired)return false;
+  const remaining = readAdminIdleDeadline() - Date.now();
+  if(remaining > 0){
+    adminIdleTimer = setTimeout(checkAdminIdle,remaining);
+    return true;
+  }
+  adminIdleExpired = true;
+  closeAdminWelcome();
+  stopAdminPolling();
+  hide('adminPanel');
+  show('authPanel');
+  say('loginMessage','Tu sesión se cerró después de 20 minutos de inactividad. Vuelve a iniciar sesión.');
+  void signOutIdleAdmin();
+  return false;
+}
+
+async function startAdminIdle(userId){
+  const {data:{session}} = await client.auth.getSession();
+  if(!session || session.user.id !== userId || adminIdleExpired)return false;
+  const key = adminSessionKey(session);
+  if(adminIdleKey !== key){
+    adminIdleKey = key;
+    adminIdleDeadline = undefined;
+    const savedDeadline = readAdminIdleDeadline();
+    if(savedDeadline)adminIdleDeadline = savedDeadline;
+    else saveAdminIdleDeadline(Date.now()+ADMIN_IDLE_LIMIT);
+  }
+  return checkAdminIdle();
+}
+
+function recordAdminActivity(event){
+  if(!event.isTrusted || !adminIdleKey || adminIdleExpired)return;
+  const now = Date.now();
+  if(readAdminIdleDeadline()-now > ADMIN_IDLE_LIMIT-1000)return;
+  if(!checkAdminIdle())return;
+  saveAdminIdleDeadline(now+ADMIN_IDLE_LIMIT);
+}
+
+for(const type of ['pointerdown','keydown','input','wheel','touchmove']){
+  window.addEventListener(type,recordAdminActivity,{capture:true,passive:true});
+}
+window.addEventListener('pageshow',()=>{if(adminIdleKey && !adminIdleExpired)checkAdminIdle();});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && adminIdleKey && !adminIdleExpired)checkAdminIdle();
+});
+window.addEventListener('storage',event=>{
+  if(event.key===adminIdleKey && event.newValue && !adminIdleExpired)checkAdminIdle();
+});
+
+async function updateAccess(welcomeUserId){if(recoveryMode||!client||adminIdleExpired)return;hide('recoveryPanel');hide('adminPanel');hide('driverPanel');const u=await user();if(!u){show('authPanel');return;}const {data:p,error}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(error||!p){show('authPanel');say('loginMessage','No se pudo consultar el perfil.');return;}if(p.status!=='approved'){show('authPanel');say('loginMessage','Cuenta no habilitada. Estado: '+p.status);return;}hide('authPanel');if(p.role==='admin'){if(!await startAdminIdle(u.id))return;if(welcomeUserId===u.id)openAdminWelcome();show('adminPanel');startAdminPolling();if(!activeSection){const trial=await refreshPlayTest();const requestedSection=location.hash.slice(1);if(!activeSection)await section(['pruebas','pasajeros','conductores'].includes(requestedSection)?requestedSection:(trial?.enabled?'pruebas':'seguridad'));}}else if(p.role==='driver'){show('driverPanel');showAvailability(p.is_available===true);}else{show('authPanel');say('loginMessage','Utiliza la aplicación Pasajeros.');}}
 async function availability(value){if(!client)return;say('driverMessage','Actualizando...');$('btnConectar').disabled=true;$('btnDesconectar').disabled=true;try{const {data,error}=await client.rpc('set_driver_availability',{p_available:value});if(error)throw error;if(data!==true)throw new Error('No autorizado por servidor.');const u=await user();const {data:p,error:pe}=await client.from('profiles').select('role,status,is_available').eq('id',u.id).maybeSingle();if(pe||p?.role!=='driver'||p.status!=='approved')throw new Error('Perfil no habilitado.');showAvailability(p.is_available===true);say('driverMessage',p.is_available===value?'Disponibilidad actualizada.':'No se confirmó el cambio.');}catch(e){say('driverMessage',errorText(e));await updateAccess();}}
 async function signout(){if(client){const {error}=await client.auth.signOut();if(error){alert(error.message);return;}}stopAdminPolling();hide('adminPanel');hide('driverPanel');show('authPanel');say('loginMessage','Sesión cerrada.');}
 async function recoverAdminPassword(){const email=$('loginEmail').value.trim();if(!email){say('loginMessage','Escribe primero tu correo de administrador.');return;}say('loginMessage','Solicitando enlace de recuperación...');try{if(!client){if(!window.supabase)throw new Error('No se cargó el servicio de acceso. Actualiza la página.');client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL});if(error)throw error;say('loginMessage','Solicitud enviada. Revisa tu correo y la carpeta de spam.');}catch(e){say('loginMessage','No se pudo solicitar el enlace: '+errorText(e));}}
 $('forgotButton').addEventListener('click',recoverAdminPassword);
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();say('loginMessage','Verificando acceso...');try{if(!client){if(!window.supabase)throw new Error('Servicio de acceso no disponible. Actualiza la página.');client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});}const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});if(error)throw error;$('loginPassword').value='';await updateAccess(data.user?.id);}catch(e){say('loginMessage','No se pudo iniciar sesión: '+errorText(e));}});
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(adminIdleExpired)return;say('loginMessage','Verificando acceso...');try{if(!client){if(!window.supabase)throw new Error('Servicio de acceso no disponible. Actualiza la página.');client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});}const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});if(error)throw error;$('loginPassword').value='';await updateAccess(data.user?.id);}catch(e){say('loginMessage','No se pudo iniciar sesión: '+errorText(e));}});
 async function init(){setupWhatsApp();document.querySelectorAll('.toggle-password').forEach(b=>b.addEventListener('click',()=>{const x=$(b.dataset.target);x.type=x.type==='password'?'text':'password';b.textContent=x.type==='password'?'👁️ Ver':'🙈 Ocultar';}));document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>section(b.dataset.section).catch(e=>say('adminMessage',errorText(e)))));$('btnSalir').onclick=signout;$('btnSalirConductor').onclick=signout;$('btnConectar').onclick=()=>availability(true);$('btnDesconectar').onclick=()=>availability(false);$('internalEmergency').onclick=()=>{$('listaIncidentes').scrollIntoView({behavior:'smooth',block:'start'});$('emergencyCallStatus').textContent='Consulta interna de FAST TRIP. No se ha contactado al ECU 911.';};$('dial911').onclick=()=>{const ok=window.confirm('¿Deseas abrir el marcador telefónico con el número 911?\\n\\nEsto NO realiza una llamada automática. Solo debes pulsar LLAMAR en tu teléfono si existe una emergencia real.');if(!ok){$('emergencyCallStatus').textContent='Cancelado. No se abrió el marcador ni se realizó ninguna llamada.';return;}$('emergencyCallStatus').textContent='Abriendo el marcador con 911. La llamada requiere tu acción en el teléfono.';window.location.href='tel:911';};$('refreshSecurity').onclick=renderSecurity;$('refreshGPS').onclick=renderGPSHistory;$('refreshShiftGPS').onclick=renderShiftGPS;$('enableSound').onclick=async()=>{soundEnabled=true;soundMuted=false;beep();};$('silenceSound').onclick=()=>{soundMuted=true;};
 if(!window.supabase){try{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js';script.onload=resolve;script.onerror=()=>reject(new Error('No se pudo descargar el servicio de acceso'));document.head.appendChild(script);});}catch(e){say('loginMessage','No se pudo cargar el acceso. Revisa tu conexión e intenta actualizar la página.');return;}}client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
-client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){closeAdminWelcome();recoveryMode=true;hide('authPanel');hide('adminPanel');hide('driverPanel');say('recoveryMessage','');show('recoveryPanel');}if(['SIGNED_IN','INITIAL_SESSION','TOKEN_REFRESHED'].includes(event))setTimeout(()=>{if(!recoveryMode)updateAccess().catch(console.error);},0);if(event==='SIGNED_OUT'){closeAdminWelcome();stopAdminPolling();hide('adminPanel');hide('driverPanel');show('authPanel');}});
+client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){closeAdminWelcome();recoveryMode=true;hide('authPanel');hide('adminPanel');hide('driverPanel');say('recoveryMessage','');show('recoveryPanel');}if(['SIGNED_IN','INITIAL_SESSION','TOKEN_REFRESHED'].includes(event))setTimeout(()=>{if(!recoveryMode)updateAccess().catch(console.error);},0);if(event==='SIGNED_OUT'){stopAdminIdle();closeAdminWelcome();stopAdminPolling();hide('adminPanel');hide('driverPanel');show('authPanel');}});
 
 
 $('recoveryForm').onsubmit=async e=>{e.preventDefault();const a=$('newPassword').value,b=$('confirmPassword').value;if(a.length<8||a!==b){say('recoveryMessage','Contraseñas distintas o demasiado cortas.');return;}const {error}=await client.auth.updateUser({password:a});if(error){say('recoveryMessage',error.message);return;}await client.auth.signOut();recoveryMode=false;hide('recoveryPanel');show('authPanel');history.replaceState({},'',location.pathname);say('loginMessage','Contraseña actualizada. Inicia sesión.');};
