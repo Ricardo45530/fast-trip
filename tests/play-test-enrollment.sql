@@ -9,20 +9,25 @@ declare
   test_phone text := '09' || lpad((random() * 99999998)::int::text, 8, '0');
   ride_id uuid := gen_random_uuid();
   denied boolean;
+  invite uuid;
+  new_invite uuid;
 begin
   if admin_id is null then raise exception 'No administrator to run test'; end if;
 
   perform set_config('request.jwt.claim.sub',admin_id::text,true);
   perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'role','authenticated')::text,true);
-  perform public.manage_play_test('open');
-  if not public.play_test_is_open() then raise exception 'Trial did not open'; end if;
+  select (public.manage_play_test('open')->>'invitation')::uuid into invite;
+  if not public.play_test_invitation_open(invite) or public.play_test_is_open()
+    or public.play_test_invitation_open(gen_random_uuid())
+  then raise exception 'Invited and normal registration are not separated'; end if;
 
   insert into auth.users(id,email,raw_app_meta_data) values
     (test_driver,'play-test-' || driver_key::text || '@example.com','{"fast_trip_play_test":"driver"}'),
     (test_passenger,'play-test-' || passenger_key::text || '@example.com','{"fast_trip_play_test":"passenger"}');
-  if not public.reserve_play_test_enrollment(driver_key,'driver','Conductor temporal',test_phone)
-    or not public.reserve_play_test_enrollment(passenger_key,'passenger','Pasajero temporal',test_phone)
-    or public.reserve_play_test_enrollment(gen_random_uuid(),'driver','Duplicado temporal',test_phone)
+  if public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',test_phone,gen_random_uuid())
+    or not public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',test_phone,invite)
+    or not public.reserve_play_test_invited_enrollment(passenger_key,'passenger','Pasajero temporal',test_phone,invite)
+    or public.reserve_play_test_invited_enrollment(gen_random_uuid(),'driver','Duplicado temporal',test_phone,invite)
   then raise exception 'Enrollment reservation failed'; end if;
   if public.finish_play_test_enrollment(driver_key,test_passenger)
     or not public.finish_play_test_enrollment(driver_key,test_driver)
@@ -66,15 +71,17 @@ begin
   perform set_config('request.jwt.claim.sub',admin_id::text,true);
   perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'role','authenticated')::text,true);
   perform public.manage_play_test('close');
-  if public.play_test_is_open() or public.driver_has_active_payment(test_driver)
-    or (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='suspended' and not is_available) <> 2
-    or public.reserve_play_test_enrollment(gen_random_uuid(),'driver','Cerrado temporal',test_phone)
-    or public.finish_play_test_enrollment(driver_key,test_driver)
-  then raise exception 'Trial close did not restore regular registration and suspend trial permissions'; end if;
-  perform public.manage_play_test('open');
-  if not public.finish_play_test_enrollment(driver_key,test_driver)
-    or (select status from public.profiles where id=test_driver)<>'suspended'
-  then raise exception 'Retry reactivated a suspended tester'; end if;
+  if public.play_test_invitation_open(invite)
+    or exists (select from auth.users where id in (test_driver,test_passenger))
+    or exists (select from public.profiles where id in (test_driver,test_passenger))
+    or exists (select from public.vehicles where driver_id=test_driver)
+    or exists (select from public.trips where id=ride_id)
+    or exists (select from fasttrip_internal.play_test_enrollments where enrollment_key in (driver_key,passenger_key))
+    or not exists (select from public.profiles where id=admin_id and role='admin' and status='approved')
+  then raise exception 'Closing the test did not remove its data or preserve Administration'; end if;
+  select (public.manage_play_test('open')->>'invitation')::uuid into new_invite;
+  if new_invite=invite or public.play_test_invitation_open(invite) or not public.play_test_invitation_open(new_invite)
+  then raise exception 'Reopening a test did not rotate the invitation'; end if;
 
 end;
 $test$;

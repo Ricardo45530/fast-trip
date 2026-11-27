@@ -220,9 +220,12 @@ window.addEventListener('online',()=>{connection();if(currentUser)void loadTrips
 async function init(){
  screen(passengerExperience.isReturning()?'access':'welcome');connection();if(!window.supabase){screen(passengerExperience.isReturning()?'access':'welcome');message('connection','No se pudo conectar con FAST TRIP. Revisa tu conexión y vuelve a abrir la app.');$('connection').classList.remove('hidden');return;}
  const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);recovering=['recovery','invite'].includes(h.get('type'))||['recovery','invite'].includes(q.get('type'));
- client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ const isPlayTestLink=q.has('prueba');
+ const auth={persistSession:true,autoRefreshToken:true,detectSessionInUrl:true};
+ if(isPlayTestLink)auth.storageKey='fast-trip-google-play-passenger-session';
+ client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth});
  client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovering=true;screen('reset');}else if(event==='SIGNED_IN'&&recovering){screen('reset');}else if(event==='SIGNED_OUT'){passengerFlow.reset();currentUser=null;stopPolling();screen('access');}});
 
- const r=await client.auth.getSession();if(recovering&&r.data?.session){screen('reset');return;}if(r.data?.session&&await checkPassenger())await loadTrips();
+ const r=await client.auth.getSession();if(recovering&&r.data?.session){screen('reset');return;}if(isPlayTestLink&&!r.data?.session){await playTest.open(()=>screen('access'));return;}if(r.data?.session&&await checkPassenger())await loadTrips();
 }
 init().catch(()=>{screen(passengerExperience.isReturning()?'access':'welcome');message('connection','No se pudo iniciar la app. Revisa tu conexión y vuelve a abrirla.');$('connection').classList.remove('hidden');});

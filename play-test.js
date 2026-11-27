@@ -17,10 +17,29 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  const submit = form.querySelector('button');
  const resume = section.querySelector('[data-resume]');
  const status = section.querySelector('[role=status]');
+ const invitation = new URLSearchParams(location.search).get('prueba');
+ const isTestLink = invitation !== null;
  const storageKey = 'fast-trip-play-test-' + role;
+ if (!isTestLink) {
+  const access = document.getElementById('access');
+  const entry = document.createElement('details');
+  entry.innerHTML = '<summary>Tengo un código de prueba de Google Play</summary><form><label>Código de prueba<input name="invite" required autocomplete="off" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
+  entry.querySelector('form').onsubmit = event => {
+   event.preventDefault();
+   const code = new FormData(event.currentTarget).get('invite').trim();
+   const url = new URL(location.href);
+   url.searchParams.set('prueba', code);
+   url.hash = '';
+   location.assign(url);
+  };
+  access.append(entry);
+ }
 
  function readDevice() {
-  try { return JSON.parse(localStorage.getItem(storageKey)); }
+  try {
+   const device = JSON.parse(localStorage.getItem(storageKey));
+   return device?.invitation === invitation ? device : null;
+  }
   catch { return null; }
  }
 
@@ -31,11 +50,16 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  }
 
  async function open(regular) {
-  const result = await getClient()?.rpc('play_test_is_open');
-  if (!result || result.error) throw new Error('No se pudo consultar el registro. Revisa tu conexión y vuelve a intentar.');
-  if (!result.data) return regular();
+  if (!isTestLink) return regular();
+  const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invitation);
+  const result = valid ? await getClient()?.rpc('play_test_invitation_open', { p_invite: invitation }) : null;
   render();
   show('playTest');
+  if (!result?.data) {
+   form.classList.add('hidden');
+   resume.classList.add('hidden');
+   status.textContent = result?.error ? 'No se pudo verificar el enlace. Vuelve a abrirlo.' : 'Este enlace de prueba ya no está activo.';
+  }
  }
 
  function showStatus(accountStatus) {
@@ -74,11 +98,11 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
    const signature = Array.from(new Uint8Array(hash)).join(',');
    let device = readDevice();
    if (device?.signature !== signature) {
-    device = { key: crypto.randomUUID(), password: crypto.randomUUID() + crypto.randomUUID(), signature };
+    device = { key: crypto.randomUUID(), password: crypto.randomUUID() + crypto.randomUUID(), signature, invitation };
     localStorage.setItem(storageKey, JSON.stringify(device));
    }
    const result = await getClient().functions.invoke('play-test-enrollment', {
-    body: { key: device.key, password: device.password, role, name, phone }
+    body: { key: device.key, password: device.password, role, name, phone, invitation }
    });
    if (result.error) {
     const body = await result.error.context?.json?.()?.catch(() => null);
@@ -103,6 +127,6 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   catch (error) { status.textContent = error.message; }
   finally { resume.disabled = false; }
  };
- section.querySelector('[data-back]').onclick = back;
+ section.querySelector('[data-back]').onclick = isTestLink ? () => { location.href = location.pathname; } : back;
  return { open, showStatus };
 };

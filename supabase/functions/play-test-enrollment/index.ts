@@ -18,8 +18,9 @@ Deno.serve(async (request) => {
   try {
     const body = await request.text();
     if (body.length > 1500) return respond(400, "Solicitud inválida.");
-    const { key, role, name, phone, password } = JSON.parse(body);
+    const { key, role, name, phone, password, invitation } = JSON.parse(body);
     if (typeof key !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(key) ||
+        typeof invitation !== "string" || !/^[0-9a-f-]{36}$/i.test(invitation) ||
         (role !== "driver" && role !== "passenger") ||
         typeof name !== "string" || name !== name.trim() || name.length < 2 || name.length > 100 ||
         typeof phone !== "string" || !/^09\d{8}$/.test(phone) ||
@@ -30,8 +31,8 @@ Deno.serve(async (request) => {
     const options = { auth: { persistSession: false, autoRefreshToken: false } };
     const url = Deno.env.get("SUPABASE_URL")!;
     const server = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, options);
-    const reserved = await server.rpc("reserve_play_test_enrollment", {
-      p_key: key, p_role: role, p_name: name, p_phone: phone,
+    const reserved = await server.rpc("reserve_play_test_invited_enrollment", {
+      p_key: key, p_role: role, p_name: name, p_phone: phone, p_invite: invitation,
     });
     if (reserved.error) return respond(503, "No se pudo guardar. Vuelve a intentar.");
     if (!reserved.data) return respond(409, "No se pudo registrar este celular. Revisa si ya lo usaste o si la prueba sigue abierta.");
@@ -49,7 +50,11 @@ Deno.serve(async (request) => {
       return respond(503, "No se pudo preparar tu acceso. Vuelve a intentar.");
     }
     const finished = await server.rpc("finish_play_test_enrollment", { p_key: key, p_user_id: user.id });
-    if (finished.error || !finished.data) return respond(503, "No se pudo completar el registro. Vuelve a intentar.");
+    if (finished.error) return respond(503, "No se pudo completar el registro. Vuelve a intentar.");
+    if (!finished.data) {
+      if (created.data.user) await server.auth.admin.deleteUser(created.data.user.id);
+      return respond(409, "La prueba ya no está abierta con este enlace.");
+    }
     return respond(200, "Registro de prueba completado.");
   } catch {
     return respond(400, "No se pudo procesar la solicitud.");
