@@ -31,8 +31,9 @@ async function checkPassenger(){
  passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
  message('greeting','HOLA, '+(profile.full_name||'PASAJERO').split(' ')[0].toUpperCase());
  message('profileName',profile.full_name);message('profilePhone',profile.phone||'Teléfono por confirmar con DARO');
- if(!await passengerFlow.afterApprovedLogin({skipGuide:isPlayTest}))return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},12000);return true;
+ if(!await passengerFlow.afterApprovedLogin({skipGuide:isPlayTest}))return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},tripRefreshInterval());return true;
 }
+function tripRefreshInterval(){return currentUser?.app_metadata?.fast_trip_play_test==='passenger'?5000:12000;}
 async function loadTrips(){
  if(!currentUser||loading)return;loading=true;
  try{
@@ -45,7 +46,7 @@ async function loadTrips(){
  if(currentUser?.id!==uid)return;
  if(t.error)throw t.error;
  if(teen.error)throw teen.error;teenRequests=teen.data||[];trips=t.data||[];cancelRequests=c.data||[];await passengerFlow.refreshEta(trips);if(await passengerFlow.processTrips(trips))return;
- message('syncStatus',c.error?'Viajes actualizados. No se pudieron consultar las cancelaciones.':'Actualizado a las '+new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})+' · se actualiza cada 12 segundos');
+ message('syncStatus',c.error?'Viajes actualizados. No se pudieron consultar las cancelaciones.':'Actualizado a las '+new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})+' · se actualiza cada '+tripRefreshInterval()/1000+' segundos');
  const signature=JSON.stringify([trips,cancelRequests,teenRequests]);if(signature!==lastRender){lastRender=signature;renderTrips();}
  await refreshTripTracking();
  const active=trips.some(x=>ACTIVE.includes(x.status));$('sendBtn').disabled=active||submittingTrip;

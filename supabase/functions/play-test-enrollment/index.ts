@@ -18,15 +18,17 @@ Deno.serve(async (request) => {
   try {
     const body = await request.text();
     if (body.length > 1500) return respond(400, "Solicitud inválida.");
-    const { key, role, name, password, invitation } = JSON.parse(body);
+    const { key, role, name: legacyName, password, invitation } = JSON.parse(body);
     if (typeof key !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(key) ||
         typeof invitation !== "string" || !/^[0-9a-f-]{36}$/i.test(invitation) ||
         (role !== "driver" && role !== "passenger") ||
-        typeof name !== "string" || name !== name.trim() || name.length < 2 || name.length > 100 ||
+        (legacyName !== undefined && (typeof legacyName !== "string" || legacyName !== legacyName.trim() ||
+          legacyName.length < 2 || legacyName.length > 100)) ||
         typeof password !== "string" || !/^[0-9a-f-]{72}$/.test(password)) {
-      return respond(400, "Revisa tu nombre y el acceso de prueba.");
+      return respond(400, "Revisa el acceso de prueba.");
     }
 
+    const name = legacyName ?? (role === "driver" ? "Conductor de prueba" : "Pasajero de prueba");
     const options = { auth: { persistSession: false, autoRefreshToken: false } };
     const url = Deno.env.get("SUPABASE_URL")!;
     const server = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, options);
@@ -34,7 +36,7 @@ Deno.serve(async (request) => {
       p_key: key, p_role: role, p_name: name, p_phone: null, p_invite: invitation,
     });
     if (reserved.error) return respond(503, "No se pudo guardar. Vuelve a intentar.");
-    if (!reserved.data) return respond(409, "No se pudo completar el registro con esta invitación. Verifica que la prueba siga abierta.");
+    if (!reserved.data) return respond(409, "No se pudo abrir el acceso con esta invitación. Verifica que la prueba siga abierta.");
 
     const email = "play-test-" + key + "@example.com";
     const created = await server.auth.admin.createUser({
@@ -49,12 +51,12 @@ Deno.serve(async (request) => {
       return respond(503, "No se pudo preparar tu acceso. Vuelve a intentar.");
     }
     const finished = await server.rpc("finish_play_test_enrollment", { p_key: key, p_user_id: user.id });
-    if (finished.error) return respond(503, "No se pudo completar el registro. Vuelve a intentar.");
+    if (finished.error) return respond(503, "No se pudo completar el acceso. Vuelve a intentar.");
     if (!finished.data) {
       if (created.data.user) await server.auth.admin.deleteUser(created.data.user.id);
       return respond(409, "La prueba ya no está abierta con este enlace.");
     }
-    return respond(200, "Registro de prueba completado.");
+    return respond(200, "Acceso de prueba preparado.");
   } catch {
     return respond(400, "No se pudo procesar la solicitud.");
   }
