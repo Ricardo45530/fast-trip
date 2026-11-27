@@ -20,7 +20,10 @@ export function outboxHandler(service,env,fetcher=fetch) {
    if(!text||text.length>3500||!/^[1-9][0-9]{7,14}$/.test(row.recipient_phone)) {await update({status:'failed',last_error:'Contenido o teléfono no válido.'});summary.failed++;continue;}
    const recent=await service.from('whatsapp_incoming_messages').select('received_at').eq('sender_phone',row.recipient_phone).order('received_at',{ascending:false}).limit(1);
    if(recent.error){await update({status:'pending',available_at:new Date(Date.now()+60000).toISOString(),last_error:'No se pudo verificar la conversación.'});continue;}
+   const manual=row.event_type==='admin_manual';
+   const conversationClosed='La conversación expiró. El destinatario debe escribir a FAST TRIP antes de enviar un mensaje manual.';
    let useTemplate=Date.parse(recent.data?.[0]?.received_at||'')<Date.now()-23*3600000||!recent.data?.length;
+   if(manual&&useTemplate){await update({status:'failed',last_error:conversationClosed});summary.failed++;continue;}
    const send=async template=>{
     const payload={messaging_product:'whatsapp',recipient_type:'individual',to:row.recipient_phone,...(template?{type:'template',template:{name:'fast_trip_actualizacion',language:{code:'es'},components:[{type:'body',parameters:[{type:'text',text:text.replace(/\s+/g,' ')}]}]}}:{type:'text',text:{preview_url:false,body:text}})};
     const response=await fetcher('https://graph.facebook.com/v27.0/1346453718561081/messages',{method:'POST',headers:{Authorization:'Bearer '+access,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});
@@ -28,7 +31,10 @@ export function outboxHandler(service,env,fetcher=fetch) {
    };
    try {
     let result=await send(useTemplate);
-    if(!result.ok&&!useTemplate&&result.data?.error?.code===131047){useTemplate=true;result=await send(true);}
+    if(!result.ok&&!useTemplate&&result.data?.error?.code===131047){
+     if(manual){await update({status:'failed',last_error:conversationClosed});summary.failed++;continue;}
+     useTemplate=true;result=await send(true);
+    }
     if(result.ok&&typeof result.data.messages?.[0]?.id==='string') {await update({status:'sent',provider_message_id:result.data.messages[0].id,provider_status:'accepted',sent_at:new Date().toISOString(),last_error:null});summary.sent++;}
     else {
      const code=Number(result.data?.error?.code||result.status);
