@@ -20,8 +20,7 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  const invitation = new URLSearchParams(location.search).get('prueba');
  const isTestLink = invitation !== null;
  const storageKey = 'fast-trip-play-test-' + role;
- if (!isTestLink) {
-  const access = document.getElementById('access');
+ function addInvitationEntry(container) {
   const entry = document.createElement('details');
   entry.innerHTML = '<summary>Tengo un código de prueba de Google Play</summary><form><label>Código de prueba<input name="invite" required autocomplete="off" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
   entry.querySelector('form').onsubmit = event => {
@@ -32,7 +31,12 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
    url.hash = '';
    location.assign(url);
   };
-  access.append(entry);
+  container.append(entry);
+ }
+ if (!isTestLink) {
+  addInvitationEntry(document.getElementById('access'));
+  const welcomeActions = document.querySelector('#welcome .welcome-bottom');
+  if (welcomeActions) addInvitationEntry(welcomeActions);
  }
 
  function readDevice() {
