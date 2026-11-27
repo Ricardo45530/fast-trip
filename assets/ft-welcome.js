@@ -1,12 +1,5 @@
 (() => {
-  const videoUrl = new URL("daro-intro.mp4", document.currentScript.src);
-  const hour = Number(new Intl.DateTimeFormat("en-GB", {
-    timeZone: "America/Guayaquil",
-    hour: "2-digit",
-    hourCycle: "h23"
-  }).format(new Date()));
-  const greeting = hour >= 5 && hour < 12 ? "Buenos días" :
-    hour >= 12 && hour < 19 ? "Buenas tardes" : "Buenas noches";
+  const videoUrl = "https://resource2.heygen.ai/videos/32f54654e5b84c13959af58862ad961d/32f54654e5b84c13959af58862ad961d/01a21db2-7593-74e4-ab67-d96c7f76a09e.mp4";
 
   const style = document.createElement("style");
   style.textContent = `
@@ -27,13 +20,12 @@
   intro.id = "ft-intro";
   intro.setAttribute("aria-labelledby", "ft-intro-title");
   intro.innerHTML = `
-    <h2 id="ft-intro-title"></h2>
-    <video playsinline preload="none" aria-label="Video de bienvenida de DARO"></video>
+    <h2 id="ft-intro-title">Bienvenido a FAST TRIP</h2>
+    <video playsinline preload="none" aria-label="Video de bienvenida de FAST TRIP en el Malecón 2000"></video>
     <button type="button" data-play hidden>Reproducir video</button>
     <button type="button" data-sound aria-pressed="false">Activar sonido</button>
     <button type="button" data-continue autofocus>Continuar</button>
   `;
-  intro.querySelector("h2").textContent = greeting + ", te damos la bienvenida a FAST TRIP";
   const video = intro.querySelector("video");
   const play = intro.querySelector("[data-play]");
   const sound = intro.querySelector("[data-sound]");
@@ -46,7 +38,7 @@
   function startVideo() {
     video.hidden = false;
     sound.hidden = false;
-    if (!video.hasAttribute("src")) video.src = videoUrl.href;
+    if (!video.hasAttribute("src")) video.src = videoUrl;
     video.play().then(() => { play.hidden = true; }, () => { play.hidden = false; });
   }
 
