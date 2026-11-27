@@ -4,10 +4,9 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  const section = document.getElementById('playTest');
  section.innerHTML = `
   <h2>Registro para pruebas de Google Play</h2>
-  <p>Para evaluadores mayores de 18 años. Escribe tu nombre y celular para entrar directamente. Los viajes de prueba se hacen sin cobros.</p>
+  <p>Para evaluadores mayores de 18 años. Escribe tu nombre completo para entrar directamente. Los viajes de prueba se hacen sin cobros.</p>
   <form>
    <label>Nombre completo<input name="fullName" autocomplete="name" required minlength="2" maxlength="100"></label>
-   <label>Número de celular<input name="phone" type="tel" autocomplete="tel" required maxlength="24" placeholder="09XXXXXXXX"></label>
    <button type="submit">Registrarme y entrar</button>
   </form>
   <button type="button" data-resume class="hidden">Entrar a la prueba</button>
@@ -99,15 +98,14 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   event.preventDefault();
   const fields = new FormData(form);
   const name = fields.get('fullName').trim();
-  const phone = fields.get('phone').trim().replace(/[()\s-]/g, '').replace(/^\+?593/, '0');
-  if (name.length < 2 || !/^09\d{8}$/.test(phone)) {
-   status.textContent = 'Escribe tu nombre y un número de celular ecuatoriano válido.';
+  if (name.length < 2 || name.length > 100) {
+   status.textContent = 'Escribe tu nombre completo.';
    return;
   }
   submit.disabled = true;
   status.textContent = 'Preparando tu acceso…';
   try {
-   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name + '\n' + phone));
+   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name));
    const signature = Array.from(new Uint8Array(hash)).join(',');
    let device = readDevice();
    if (device?.signature !== signature) {
@@ -115,7 +113,7 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
     localStorage.setItem(storageKey, JSON.stringify(device));
    }
    const result = await getClient().functions.invoke('play-test-enrollment', {
-    body: { key: device.key, password: device.password, role, name, phone, invitation }
+    body: { key: device.key, password: device.password, role, name, invitation }
    });
    if (result.error) {
     const body = await result.error.context?.json?.()?.catch(() => null);

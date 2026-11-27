@@ -6,7 +6,6 @@ declare
   test_passenger uuid := gen_random_uuid();
   driver_key uuid := gen_random_uuid();
   passenger_key uuid := gen_random_uuid();
-  test_phone text := '09' || lpad((random() * 99999998)::int::text, 8, '0');
   ride_id uuid := gen_random_uuid();
   denied boolean;
   invite uuid;
@@ -24,19 +23,20 @@ begin
   insert into auth.users(id,email,raw_app_meta_data) values
     (test_driver,'play-test-' || driver_key::text || '@example.com','{"fast_trip_play_test":"driver"}'),
     (test_passenger,'play-test-' || passenger_key::text || '@example.com','{"fast_trip_play_test":"passenger"}');
-  if public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',test_phone,gen_random_uuid())
-    or not public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',test_phone,invite)
-    or not public.reserve_play_test_invited_enrollment(passenger_key,'passenger','Pasajero temporal',test_phone,invite)
-    or public.reserve_play_test_invited_enrollment(gen_random_uuid(),'driver','Duplicado temporal',test_phone,invite)
+  if public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',null,gen_random_uuid())
+    or not public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',null,invite)
+    or not public.reserve_play_test_invited_enrollment(passenger_key,'passenger','Pasajero temporal',null,invite)
+    or not public.reserve_play_test_invited_enrollment(driver_key,'driver','Conductor temporal',null,invite)
+    or public.reserve_play_test_invited_enrollment(driver_key,'driver','Nombre diferente',null,invite)
   then raise exception 'Enrollment reservation failed'; end if;
   if public.finish_play_test_enrollment(driver_key,test_passenger)
     or not public.finish_play_test_enrollment(driver_key,test_driver)
     or not public.finish_play_test_enrollment(driver_key,test_driver)
     or not public.finish_play_test_enrollment(passenger_key,test_passenger)
   then raise exception 'Enrollment finalization or retry failed'; end if;
-  if (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='approved') <> 2
+  if (select count(*) from public.profiles where id in (test_driver,test_passenger) and status='approved' and phone is null) <> 2
     or not fasttrip_internal.is_review_user(test_driver) or not fasttrip_internal.is_review_user(test_passenger)
-  then raise exception 'Enrollment must be approved immediately and isolated'; end if;
+  then raise exception 'Enrollment must be approved immediately, isolated, and without a phone'; end if;
 
   perform set_config('request.jwt.claim.sub',test_driver::text,true);
   perform set_config('request.jwt.claims',jsonb_build_object('sub',test_driver,'role','authenticated')::text,true);

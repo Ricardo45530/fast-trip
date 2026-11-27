@@ -18,24 +18,23 @@ Deno.serve(async (request) => {
   try {
     const body = await request.text();
     if (body.length > 1500) return respond(400, "Solicitud inválida.");
-    const { key, role, name, phone, password, invitation } = JSON.parse(body);
+    const { key, role, name, password, invitation } = JSON.parse(body);
     if (typeof key !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(key) ||
         typeof invitation !== "string" || !/^[0-9a-f-]{36}$/i.test(invitation) ||
         (role !== "driver" && role !== "passenger") ||
         typeof name !== "string" || name !== name.trim() || name.length < 2 || name.length > 100 ||
-        typeof phone !== "string" || !/^09\d{8}$/.test(phone) ||
         typeof password !== "string" || !/^[0-9a-f-]{72}$/.test(password)) {
-      return respond(400, "Escribe tu nombre y un celular ecuatoriano válido.");
+      return respond(400, "Revisa tu nombre y el acceso de prueba.");
     }
 
     const options = { auth: { persistSession: false, autoRefreshToken: false } };
     const url = Deno.env.get("SUPABASE_URL")!;
     const server = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, options);
     const reserved = await server.rpc("reserve_play_test_invited_enrollment", {
-      p_key: key, p_role: role, p_name: name, p_phone: phone, p_invite: invitation,
+      p_key: key, p_role: role, p_name: name, p_phone: null, p_invite: invitation,
     });
     if (reserved.error) return respond(503, "No se pudo guardar. Vuelve a intentar.");
-    if (!reserved.data) return respond(409, "No se pudo registrar este celular. Revisa si ya lo usaste o si la prueba sigue abierta.");
+    if (!reserved.data) return respond(409, "No se pudo completar el registro con esta invitación. Verifica que la prueba siga abierta.");
 
     const email = "play-test-" + key + "@example.com";
     const created = await server.auth.admin.createUser({
