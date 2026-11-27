@@ -19,11 +19,15 @@ body:has(#adminPanel:not(.hidden)) .ft-ecuador-flag{position:absolute}
 .play-test-inline fieldset{border:0;margin:0;padding:0;min-width:0}
 #regularPassengerApplications summary{cursor:pointer;padding:10px;color:#e5c16b;font-weight:bold;text-align:left}
 
-#adminWelcome{width:min(860px,calc(100% - 28px));max-height:calc(100dvh - 28px);padding:16px;border:1px solid #d7b45a;border-radius:16px;background:#101010;color:#f5f0e5;text-align:center}
-#adminWelcome::backdrop{background:#080808f2}
-#adminWelcome h2{margin:0 0 12px}
-#adminWelcome video{display:block;width:100%;max-height:calc(100dvh - 150px);aspect-ratio:16/9;background:#080808;border-radius:8px}
-#adminWelcome button{margin:12px 0 0}
+#adminWelcome{
+  position:fixed;inset:0;width:100%;height:100vh;height:100dvh;max-width:none;max-height:none;
+  margin:0;padding:0;border:0;overflow:hidden;background:#080808;color:#f5f0e5;
+}
+#adminWelcome::backdrop{background:#080808}
+#adminWelcomeTitle{position:absolute;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#adminWelcome video{display:block;width:100%;height:100%;object-fit:contain}
+#adminWelcome form{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));margin:0}
+#adminWelcome button{min-height:44px;margin:0}
 </style></head><body><div class="ft-ecuador-flag" role="img" aria-label="Bandera del Ecuador ondeando">🇪🇨</div>
 <img src="logo fast trip.jpeg" alt="FAST TRIP" style="display:block;width:100%;max-width:700px;margin:auto">
 <main><h1>FAST TRIP</h1><p class="note">LO HACEMOS DIFERENTE</p><div class="line"></div>
