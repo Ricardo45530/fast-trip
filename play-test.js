@@ -3,8 +3,8 @@
 window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin }) {
  const section = document.getElementById('playTest');
  section.innerHTML = `
-  <h2>Prueba cerrada de FAST TRIP</h2>
-  <p>Esta prueba es para mayores de 18 años. Regístrate y entra desde el mismo dispositivo. Los viajes de prueba se hacen sin cobros.</p>
+  <h2>Registro para pruebas de Google Play</h2>
+  <p>Para evaluadores mayores de 18 años. Escribe tu nombre y celular para entrar directamente. Los viajes de prueba se hacen sin cobros.</p>
   <form>
    <label>Nombre completo<input name="fullName" autocomplete="name" required minlength="2" maxlength="100"></label>
    <label>Número de celular<input name="phone" type="tel" autocomplete="tel" required maxlength="24" placeholder="09XXXXXXXX"></label>
@@ -22,7 +22,8 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  const storageKey = 'fast-trip-play-test-' + role;
  function addInvitationEntry(container) {
   const entry = document.createElement('details');
-  entry.innerHTML = '<summary>Tengo un código de prueba de Google Play</summary><form><label>Código de prueba<input name="invite" required autocomplete="off" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
+  entry.className = 'ft-play-test-entry';
+  entry.innerHTML = '<summary>Entrar a prueba de Google Play</summary><form><label>Código de prueba<input name="invite" required autocomplete="off" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
   entry.querySelector('form').onsubmit = event => {
    event.preventDefault();
    const code = new FormData(event.currentTarget).get('invite').trim();
@@ -34,9 +35,17 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   container.append(entry);
  }
  if (!isTestLink) {
-  addInvitationEntry(document.getElementById('access'));
-  const welcomeActions = document.querySelector('#welcome .welcome-bottom');
-  if (welcomeActions) addInvitationEntry(welcomeActions);
+  const style = document.createElement('style');
+  style.textContent = `
+   .ft-play-test-entry{margin:12px 0;color:#f4db9a}
+   .ft-play-test-entry summary{padding:12px;border:1px solid #b99545;border-radius:10px;background:#17130c;text-align:center;cursor:pointer;font-weight:700}
+   .ft-play-test-entry form{padding:8px 0}
+  `;
+  document.head.append(style);
+  for (const selector of ['#access', '#welcome .welcome-bottom', '#terms', '#registration']) {
+   const container = document.querySelector(selector);
+   if (container) addInvitationEntry(container);
+  }
  }
 
  function readDevice() {

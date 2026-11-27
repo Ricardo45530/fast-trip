@@ -1,4 +1,5 @@
 (() => {
+  if (new URLSearchParams(location.search).has("prueba")) return;
   const videoUrl = "https://resource2.heygen.ai/videos/32f54654e5b84c13959af58862ad961d/32f54654e5b84c13959af58862ad961d/01a21db2-7593-74e4-ab67-d96c7f76a09e.mp4";
 
   const style = document.createElement("style");
