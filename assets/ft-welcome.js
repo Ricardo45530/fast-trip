@@ -51,7 +51,9 @@
     style.remove();
   }, { once: true });
   intro.querySelector("[data-continue]").onclick = () => intro.close();
-  video.addEventListener("ended", () => intro.close());
+  video.addEventListener("ended", () => {
+    if (!intro.querySelector(".ft-play-test-entry[open]")) intro.close();
+  });
   video.addEventListener("error", () => {
     video.hidden = true;
     play.hidden = true;
@@ -65,6 +67,7 @@
   };
 
   document.body.append(intro);
+  intro.dispatchEvent(new Event("fasttrip:welcome-ready", { bubbles: true }));
   intro.showModal();
   if (!reduceMotion) startVideo();
 })();

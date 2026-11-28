@@ -22,34 +22,54 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   location.assign(url);
  }
 
- function addInvitationEntry(container) {
+ function addInvitationEntry(container, before = null) {
   const entry = document.createElement('details');
   entry.className = 'ft-play-test-entry';
-  entry.innerHTML = '<summary>Entrar a prueba de Google Play</summary><button type="button" data-continue class="hidden">Continuar prueba</button><form><label>Código de prueba<input name="invite" required autocomplete="off" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
+  entry.innerHTML = '<summary>Entrar a prueba de Google Play</summary><button type="button" data-continue class="hidden">Continuar prueba</button><form><label>Código de prueba<input name="invite" required autocomplete="off" autocapitalize="none" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
   const saved = readSavedDevice();
   if (saved?.registered && invitationPattern.test(saved.invitation)) {
    const continueButton = entry.querySelector('[data-continue]');
    continueButton.classList.remove('hidden');
    continueButton.onclick = () => useInvitation(saved.invitation);
   }
-  entry.querySelector('form').onsubmit = event => {
+  const form = entry.querySelector('form');
+  const input = form.elements.namedItem('invite');
+  input.addEventListener('input', () => input.setCustomValidity(''));
+  form.onsubmit = event => {
    event.preventDefault();
-   useInvitation(new FormData(event.currentTarget).get('invite').trim());
+   const code = input.value.trim();
+   if (!invitationPattern.test(code)) {
+    input.setCustomValidity('Copia el código completo de tu correo de invitación, incluidos los guiones.');
+    input.reportValidity();
+    return;
+   }
+   useInvitation(code);
   };
-  container.append(entry);
+  container.insertBefore(entry, before);
  }
  if (!isTestLink) {
   const style = document.createElement('style');
   style.textContent = `
    .ft-play-test-entry{margin:12px 0;color:#f4db9a}
-   .ft-play-test-entry summary{padding:12px;border:1px solid #b99545;border-radius:10px;background:#17130c;text-align:center;cursor:pointer;font-weight:700}
+   .ft-play-test-entry summary{padding:12px;border:1px solid #b99545;border-radius:10px;background:#d4af37;color:#161109;text-align:center;cursor:pointer}
+   .ft-play-test-entry summary{font-weight:700}
    .ft-play-test-entry form{padding:8px 0}
+   #ft-intro .ft-play-test-entry[open]~video,
+   #ft-intro .ft-play-test-entry[open]~[data-play],
+   #ft-intro .ft-play-test-entry[open]~[data-sound]{display:none}
   `;
   document.head.append(style);
   for (const selector of ['#access', '#welcome .welcome-bottom', '#terms', '#registration']) {
    const container = document.querySelector(selector);
-   if (container) addInvitationEntry(container);
+   if (container) {
+    const heading = container.firstElementChild;
+    addInvitationEntry(container, heading?.matches('h2') ? heading.nextSibling : container.firstChild);
+   }
   }
+  document.addEventListener('fasttrip:welcome-ready', event => {
+   const intro = event.target;
+   addInvitationEntry(intro, intro.querySelector('video'));
+  });
  }
 
  function readSavedDevice() {
