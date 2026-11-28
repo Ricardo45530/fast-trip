@@ -5,13 +5,15 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
  section.innerHTML = `
   <h2>Prueba de Google Play</h2>
   <p>Para evaluadores mayores de 18 años. Puedes probar viajes entre las dos apps sin cobros.</p>
-  <button type="button" data-enter class="hidden">Entrar a la prueba</button>
+  <button type="button" data-enter class="hidden">Reintentar</button>
   <p role="status"></p>
   <button type="button" data-back>Volver</button>`;
  const enter = section.querySelector('[data-enter]');
  const status = section.querySelector('[role=status]');
- const invitation = new URLSearchParams(location.search).get('prueba');
- const isTestLink = invitation !== null;
+ const route = new URLSearchParams(location.search).get('prueba');
+ const direct = route === 'directa';
+ const invitation = direct ? '00000000-0000-0000-0000-000000000000' : route;
+ const isTestLink = route !== null;
  const storageKey = 'fast-trip-play-test-' + role;
  const invitationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,46 +24,17 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   location.assign(url);
  }
 
- function addInvitationEntry(container, before = null) {
-  const entry = document.createElement('details');
-  entry.className = 'ft-play-test-entry';
-  entry.innerHTML = '<summary>Entrar a prueba de Google Play</summary><button type="button" data-continue class="hidden">Continuar prueba</button><form><label>Código de prueba<input name="invite" required autocomplete="off" autocapitalize="none" spellcheck="false"></label><button type="submit">Abrir acceso de prueba</button></form>';
-  const saved = readSavedDevice();
-  if (saved?.registered && invitationPattern.test(saved.invitation)) {
-   const continueButton = entry.querySelector('[data-continue]');
-   continueButton.classList.remove('hidden');
-   continueButton.onclick = () => useInvitation(saved.invitation);
-  }
-  const form = entry.querySelector('form');
-  const input = form.elements.namedItem('invite');
-  input.addEventListener('input', () => input.setCustomValidity(''));
-  form.onsubmit = event => {
-   event.preventDefault();
-   const code = input.value.trim();
-   if (!invitationPattern.test(code)) {
-    input.setCustomValidity('Copia el código completo de tu correo de invitación, incluidos los guiones.');
-    input.reportValidity();
-    return;
-   }
-   useInvitation(code);
-  };
-  container.insertBefore(entry, before);
- }
  if (!isTestLink) {
-  const style = document.createElement('style');
-  style.textContent = `
-   .ft-play-test-entry{margin:12px 0;color:#f4db9a}
-   .ft-play-test-entry summary{padding:12px;border:1px solid #b99545;border-radius:10px;background:#d4af37;color:#161109;text-align:center;cursor:pointer}
-   .ft-play-test-entry summary{font-weight:700}
-   .ft-play-test-entry form{padding:8px 0}
-  `;
-  document.head.append(style);
-  for (const selector of ['#access', '#welcome .welcome-bottom', '#terms', '#registration']) {
+  for (const selector of ['#access', '#welcome .welcome-bottom']) {
    const container = document.querySelector(selector);
-   if (container) {
-    const heading = container.firstElementChild;
-    addInvitationEntry(container, heading?.matches('h2') ? heading.nextSibling : container.firstChild);
-   }
+   if (!container) continue;
+   const button = document.createElement('button');
+   button.type = 'button';
+   button.className = 'gold';
+   button.textContent = 'Entrar a la prueba';
+   button.onclick = () => useInvitation('directa');
+   const heading = container.firstElementChild;
+   container.insertBefore(button, heading?.matches('h2') ? heading.nextSibling : heading);
   }
  }
 
@@ -77,14 +50,8 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
 
  async function open(regular) {
   if (!isTestLink) return regular();
-  const result = invitationPattern.test(invitation)
-   ? await getClient()?.rpc('play_test_invitation_open', { p_invite: invitation })
-   : null;
   show('playTest');
-  enter.classList.toggle('hidden', !result?.data);
-  status.textContent = result?.data ? '' : result?.error
-   ? 'No se pudo verificar el acceso. Vuelve a intentar.'
-   : 'Este código de prueba ya no está activo.';
+  await enterTest();
  }
 
  function showStatus(accountStatus) {
@@ -106,10 +73,21 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
   await onLogin();
  }
 
- enter.onclick = async () => {
+ async function enterTest() {
+  enter.classList.add('hidden');
   enter.disabled = true;
   status.textContent = 'Abriendo la prueba…';
   try {
+   if (!invitationPattern.test(invitation)) {
+    status.textContent = 'Este enlace de prueba no es válido.';
+    return;
+   }
+   const availability = await getClient().rpc('play_test_invitation_open', { p_invite: invitation });
+   if (availability.error) throw new Error('No se pudo verificar el acceso. Vuelve a intentar.');
+   if (!availability.data) {
+    status.textContent = 'La prueba está cerrada.';
+    return;
+   }
    let device = readDevice();
    if (!device?.registered) {
     // An older unfinished registration used a name and needs a new key.
@@ -127,13 +105,16 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
     device.registered = true;
     localStorage.setItem(storageKey, JSON.stringify(device));
    }
+   status.textContent = '';
    await login(device);
   } catch (error) {
+   enter.classList.remove('hidden');
    status.textContent = error.message || 'No se pudo abrir la prueba.';
   } finally {
    enter.disabled = false;
   }
- };
+ }
+ enter.onclick = enterTest;
  section.querySelector('[data-back]').onclick = isTestLink ? () => { location.href = location.pathname; } : back;
  return { open, showStatus };
 };
