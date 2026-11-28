@@ -1,6 +1,6 @@
 plugins { id 'com.android.application' }
 android { namespace 'ec.fasttrip.pasajeros'; compileSdk 36
- defaultConfig { testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"; applicationId 'com.fasttrip.pasajeros'; minSdk 24; targetSdk 36; versionCode 8; versionName '1.0.7' }
+ defaultConfig { testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"; applicationId 'com.fasttrip.pasajeros'; minSdk 24; targetSdk 36; versionCode 9; versionName '1.0.8' }
  signingConfigs {
   release {
    if (System.getenv('FASTTRIP_KEYSTORE_PATH')) {
