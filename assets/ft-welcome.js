@@ -1,5 +1,5 @@
-(() => {
-  if (new URLSearchParams(location.search).has("prueba")) return;
+window.showFastTripWelcome = function () {
+  if (document.getElementById("ft-intro") || typeof HTMLDialogElement === "undefined") return;
   const videoUrl = "https://resource2.heygen.ai/videos/32f54654e5b84c13959af58862ad961d/32f54654e5b84c13959af58862ad961d/01a21db2-7593-74e4-ab67-d96c7f76a09e.mp4";
 
   const style = document.createElement("style");
@@ -51,9 +51,7 @@
     style.remove();
   }, { once: true });
   intro.querySelector("[data-continue]").onclick = () => intro.close();
-  video.addEventListener("ended", () => {
-    if (!intro.querySelector(".ft-play-test-entry[open]")) intro.close();
-  });
+  video.addEventListener("ended", () => intro.close());
   video.addEventListener("error", () => {
     video.hidden = true;
     play.hidden = true;
@@ -67,7 +65,6 @@
   };
 
   document.body.append(intro);
-  intro.dispatchEvent(new Event("fasttrip:welcome-ready", { bubbles: true }));
   intro.showModal();
   if (!reduceMotion) startVideo();
-})();
+};

@@ -54,9 +54,6 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
    .ft-play-test-entry summary{padding:12px;border:1px solid #b99545;border-radius:10px;background:#d4af37;color:#161109;text-align:center;cursor:pointer}
    .ft-play-test-entry summary{font-weight:700}
    .ft-play-test-entry form{padding:8px 0}
-   #ft-intro .ft-play-test-entry[open]~video,
-   #ft-intro .ft-play-test-entry[open]~[data-play],
-   #ft-intro .ft-play-test-entry[open]~[data-sound]{display:none}
   `;
   document.head.append(style);
   for (const selector of ['#access', '#welcome .welcome-bottom', '#terms', '#registration']) {
@@ -66,10 +63,6 @@ window.mountFastTripPlayTest = function ({ role, getClient, show, back, onLogin 
     addInvitationEntry(container, heading?.matches('h2') ? heading.nextSibling : container.firstChild);
    }
   }
-  document.addEventListener('fasttrip:welcome-ready', event => {
-   const intro = event.target;
-   addInvitationEntry(intro, intro.querySelector('video'));
-  });
  }
 
  function readSavedDevice() {

@@ -19,7 +19,7 @@ function link(text,url){const a=node('a',text);a.href=url;a.target='_blank';a.re
 function button(text,run,cls){const b=node('button',text,cls);b.type='button';b.onclick=run;return b;}
 function connection(){ $('connection').classList.toggle('hidden',navigator.onLine); }
 function stopPolling(){if(poll)clearInterval(poll);poll=null;trips=[];cancelRequests=[];lastRender='';clearTripTracking();$('tripHistory').replaceChildren();}
-async function checkPassenger(){
+async function checkPassenger(showWelcome=false){
  const {data,error}=await client.auth.getUser();
  if(error||!data?.user){currentUser=null;stopPolling();screen('access');return false;}
  const p=await client.from('profiles').select('id,full_name,phone,role,status').eq('id',data.user.id).maybeSingle();
@@ -31,6 +31,7 @@ async function checkPassenger(){
  passengerExperience.markReturning();if(passengerExperience.sessionUser!==currentUser.id){passengerExperience.sessionUser=currentUser.id;passengerExperience.nextLandscape();}
  message('greeting','HOLA, '+(profile.full_name||'PASAJERO').split(' ')[0].toUpperCase());
  message('profileName',profile.full_name);message('profilePhone',profile.phone||'Teléfono por confirmar con DARO');
+ if(showWelcome&&!isPlayTest)window.showFastTripWelcome?.();
  if(!await passengerFlow.afterApprovedLogin({skipGuide:isPlayTest}))return false;screen('tripPanel');if(!poll)poll=setInterval(()=>{if(!document.hidden&&activeScreen==='tripPanel')void loadTrips();},tripRefreshInterval());return true;
 }
 function tripRefreshInterval(){return currentUser?.app_metadata?.fast_trip_play_test==='passenger'?5000:12000;}
@@ -184,7 +185,7 @@ $('tripForm').onsubmit=async e=>{
 $('registrationForm').onsubmit=passengerFlow.submitRegistration;
 $('loginForm').onsubmit=async e=>{
  e.preventDefault();if(!client){message('accessMessage','No se pudo conectar. Recarga la app e intenta nuevamente.');return;}$('loginSubmit').disabled=true;message('accessMessage','Verificando tu cuenta…');
- try{const r=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error){message('accessMessage','No pudimos iniciar sesión. Revisa tus datos o recupera tu contraseña.');return;}message('accessMessage','');passengerFlow.loggedIn(r.data.user);if(await checkPassenger())await loadTrips();}catch(err){message('accessMessage',errorText(err));}finally{$('loginSubmit').disabled=false;}
+ try{const r=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error){message('accessMessage','No pudimos iniciar sesión. Revisa tus datos o recupera tu contraseña.');return;}message('accessMessage','');passengerFlow.loggedIn(r.data.user);if(await checkPassenger(true))await loadTrips();}catch(err){message('accessMessage',errorText(err));}finally{$('loginSubmit').disabled=false;}
 };
 async function passwordLink(mode){
  if(!client)return;const email=$('email');if(!email.value.trim()||!email.checkValidity()){message('accessMessage','Escribe un correo válido para recibir el enlace.');email.focus();return;}
